@@ -3,6 +3,8 @@
 namespace backend\modules\clientes\models;
 
 use Yii;
+use backend\modules\empresas\models\Empresas;
+
 
 /**
  * This is the model class for table "clientes".

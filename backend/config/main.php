@@ -13,25 +13,20 @@ return [
     'controllerNamespace' => 'backend\controllers',
     'bootstrap' => ['log'],
 
-
     'modules' => [
-    'clientes' => [
-        'class' => 'backend\modules\clientes\Module',
+        'clientes' => ['class' => 'backend\modules\clientes\Module'],
+        'empresas' => ['class' => 'backend\modules\empresas\Module'],
+        'reservas' => ['class' => 'backend\modules\reservas\Module'],
+        'menu_almuerzo_cena' => ['class' => 'backend\modules\menu_almuerzo_cena\Module'],
+        'menu_desayuno' => ['class' => 'backend\modules\menu_desayuno\Module'],
+        'menu_coctel' => ['class' => 'backend\modules\menu_coctel\Module'],
+        'menu_coffee_break' => ['class' => 'backend\modules\menu_coffee_break\Module'],
+        'menu_seminario' => ['class' => 'backend\modules\menu_seminario\Module'],
+        'mesas' => ['class' => 'backend\modules\mesas\Module'],
+        'calendario' => ['class' => 'backend\modules\mesas\Module'],
+        'pagos_reservas' => ['class' => 'backend\modules\pagos_reservas\Module'],
+        'gridview' => ['class' => '\kartik\grid\Module'],
     ],
-    'empresas' => [
-        'class' => 'backend\modules\empresas\Module',
-    ],
-    'reservas' => [
-        'class' => 'backend\modules\reservas\Module',
-    ],
-    // AÑADE ESTO:
-    'gridview' =>  [
-        'class' => '\kartik\grid\Module'
-    ],
-],
-
-
-
 
     'components' => [
         'request' => [
@@ -46,35 +41,29 @@ return [
         ],
         'assetManager' => [
             'bundles' => [
-                // 1. Deshabilitar Bootstrap 5 completamente
+                'yii2fullcalendar\yii2fullcalendarAsset' => [
+                    'sourcePath' => null,
+                    'js' => [],
+                    'css' => [],
+                ],
+                'yii\web\MomentAsset' => [
+                    'sourcePath' => null,
+                    'js' => [],
+                ],
+                // DESHABILITAR BOOTSTRAP 5
                 'yii\bootstrap5\BootstrapAsset' => false,
                 'yii\bootstrap5\BootstrapPluginAsset' => false,
 
-                // 2. Forzar Bootstrap 4 en widgets base
+                // FORZAR BOOTSTRAP 4
                 'yii\bootstrap\BootstrapAsset' => [
                     'sourcePath' => '@npm/bootstrap/dist',
                     'css' => ['css/bootstrap.min.css'],
                     'js' => ['js/bootstrap.bundle.min.js']
                 ],
 
-                // 3. Configurar AdminLTE (si usas adminlte-asset)
-                'dmstr\web\AdminLteAsset' => [
-                    'depends' => [
-                        'yii\web\YiiAsset',
-                        'yii\bootstrap\BootstrapAsset',
-                        'yii\bootstrap\BootstrapPluginAsset',
-                    ],
-                ],
-
-                // 4. Configurar Kartik widgets para Bootstrap 4
+                // CONFIGURAR KARTIK
                 'kartik\base\BootstrapAsset' => [
-                    'bsDependencyEnabled' => false, // No cargar bootstrap.css
-                    'bsVersion' => '4.x',
-                ],
-                'kartik\grid\GridViewAsset' => [
-                    'bsVersion' => '4.x',
-                ],
-                'kartik\dialog\DialogAsset' => [
+                    'bsDependencyEnabled' => false,
                     'bsVersion' => '4.x',
                 ],
             ],
@@ -85,7 +74,6 @@ return [
             'identityCookie' => ['name' => '_identity-backend', 'httpOnly' => true],
         ],
         'session' => [
-            // this is the name of the session cookie used for login on the backend
             'name' => 'advanced-backend',
         ],
         'log' => [
@@ -100,14 +88,7 @@ return [
         'errorHandler' => [
             'errorAction' => 'site/error',
         ],
-        /*
-        'urlManager' => [
-            'enablePrettyUrl' => true,
-            'showScriptName' => false,
-            'rules' => [
-            ],
-        ],
-        */
-    ],
-    'params' => $params,
-];
+    ], // Aquí cierra components
+
+    'params' => $params, // Params queda fuera de components
+]; // Fin del return

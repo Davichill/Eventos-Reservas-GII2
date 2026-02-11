@@ -68,4 +68,23 @@ return [
                 return Url::to([$action, 'id' => $key]);
         },
     ],
+    [
+    'class' => 'kartik\grid\DataColumn',
+    'label' => 'Link de Reserva',
+    'format' => 'raw',
+    'value' => function($model) {
+        // Generamos la URL absoluta para la vista de esta reserva
+        $url = Yii::$app->urlManager->createAbsoluteUrl(['/reservas/reservas/view', 'id' => $model->id]);
+        
+        return '<div class="input-group input-group-sm">
+                    <input type="text" class="form-control" value="' . $url . '" id="link-input-' . $model->id . '" readonly>
+                    <div class="input-group-append">
+                        <button class="btn btn-outline-primary" type="button" onclick="copyToClipboard(' . $model->id . ')" title="Copiar Link">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </div>';
+    },
+    'width' => '250px',
+],
 ];

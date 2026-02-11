@@ -30,13 +30,13 @@ CrudAsset::register($this);
                     'content' =>
                         Html::a(
                             '<i class="fas fa-plus"></i>',
-                            ['create'],
-                            ['role' => 'modal-remote', 'title' => 'Nueva Reserva', 'class' => 'btn btn-success']
-                        ) .
+                            ['create'], // Cambiado de glyphicon-plus a fas fa-plus
+                            ['role' => 'modal-remote', 'title' => 'Crear nuevo Cliente', 'class' => 'btn btn-success']
+                        ) . // Cambié btn-default por btn-success para que se vea mejor
                         Html::a(
                             '<i class="fas fa-sync"></i>',
-                            [''],
-                            ['data-pjax' => 1, 'class' => 'btn btn-outline-secondary', 'title' => 'Recargar']
+                            [''], // Cambiado de glyphicon-repeat a fas fa-sync
+                            ['data-pjax' => 1, 'class' => 'btn btn-default', 'title' => 'Reiniciar']
                         ) .
                         '{toggleData}' .
                         '{export}'
@@ -74,3 +74,23 @@ CrudAsset::register($this);
     "footer" => "",// always need it for jquery plugin
 ]) ?>
 <?php Modal::end(); ?>
+
+<?php
+$js = <<< JS
+function copyToClipboard(id) {
+    var copyText = document.getElementById("link-input-" + id);
+    copyText.select();
+    copyText.setSelectionRange(0, 99999); // Para móviles
+
+    navigator.clipboard.writeText(copyText.value).then(function() {
+        // Opcional: un mensaje discreto con Krajee Toast o un alert
+        alert("¡Link copiado!: " + copyText.value);
+    }, function(err) {
+        console.error('No se pudo copiar: ', err);
+    });
+}
+// Guardamos la función en el objeto window para que sea global y accesible desde el onclick
+window.copyToClipboard = copyToClipboard;
+JS;
+$this->registerJs($js, \yii\web\View::POS_END);
+?>

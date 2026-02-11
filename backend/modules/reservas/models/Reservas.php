@@ -3,6 +3,7 @@
 namespace backend\modules\reservas\models;
 
 use Yii;
+use backend\modules\empresas\models\Empresas;
 
 /**
  * This is the model class for table "reservas".
@@ -73,26 +74,29 @@ class Reservas extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['token', 'id_cliente', 'id_empresa', 'firma_nombre', 'firma_identificacion', 'contacto_evento_nombre', 'contacto_evento_telefono', 'nombre_evento', 'equipos_audiovisuales', 'id_mesa', 'id_salon', 'notas', 'hora_inicio', 'hora_fin', 'manteleria', 'color_servilleta', 'logistica', 'observaciones', 'planimetria_url', 'menu_opcion', 'id_coordinador'], 'default', 'value' => null],
-            [['total_pagado'], 'default', 'value' => 0.00],
-            [['estado'], 'default', 'value' => 'Pendiente'],
+            // 1. Quitamos cliente_nombre de aquí porque usamos el ID del selector
+            [['id_tipo_evento', 'fecha_evento', 'cantidad_personas'], 'required', 'message' => '{attribute} no puede estar vacío.'],
+
             [['id_cliente', 'id_empresa', 'id_tipo_evento', 'cantidad_personas', 'id_mesa', 'id_salon', 'id_coordinador'], 'integer'],
-            [['cliente_nombre', 'id_tipo_evento', 'fecha_evento', 'hora_evento', 'cantidad_personas'], 'required'],
+
+            // 2. Quitamos hora_evento de required y lo ponemos en safe
             [['fecha_evento', 'hora_evento', 'fecha_creacion', 'hora_inicio', 'hora_fin'], 'safe'],
+
             [['equipos_audiovisuales', 'estado_pago', 'estado', 'notas', 'logistica', 'observaciones', 'menu_opcion'], 'string'],
             [['total_evento', 'total_pagado'], 'number'],
             [['token', 'cliente_nombre', 'manteleria'], 'string', 'max' => 100],
             [['firma_nombre', 'contacto_evento_nombre', 'nombre_evento', 'planimetria_url'], 'string', 'max' => 255],
             [['firma_identificacion', 'contacto_evento_telefono'], 'string', 'max' => 20],
             [['color_servilleta'], 'string', 'max' => 50],
-            ['estado_pago', 'in', 'range' => array_keys(self::optsEstadoPago())],
-            ['estado', 'in', 'range' => array_keys(self::optsEstado())],
             [['token'], 'unique'],
             [['id_salon'], 'exist', 'skipOnError' => true, 'targetClass' => Salones::class, 'targetAttribute' => ['id_salon' => 'id']],
             [['id_empresa'], 'exist', 'skipOnError' => true, 'targetClass' => Empresas::class, 'targetAttribute' => ['id_empresa' => 'id']],
             [['id_coordinador'], 'exist', 'skipOnError' => true, 'targetClass' => AdminUsuarios::class, 'targetAttribute' => ['id_coordinador' => 'id']],
+            // ... el resto igual
         ];
     }
+
+
 
     /**
      * {@inheritdoc}
@@ -326,5 +330,22 @@ class Reservas extends \yii\db\ActiveRecord
     {
         // Suponiendo que la tabla se llama tipos_evento y el modelo TiposEvento
         return $this->hasOne(\backend\modules\reservas\models\TiposEvento::class, ['id' => 'id_tipo_evento']);
+    }
+
+    // backend/modules/reservas/models/Reservas.php
+
+    // En Reservas.php
+
+    public function beforeSave($insert)
+    {
+        if (parent::beforeSave($insert)) {
+            if ($insert) {
+                // Genera un token único de 32 caracteres basado en el tiempo
+                $this->token = Yii::$app->security->generateRandomString(32);
+                $this->fecha_creacion = date('Y-m-d H:i:s');
+            }
+            return true;
+        }
+        return false;
     }
 }
