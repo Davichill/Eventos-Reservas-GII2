@@ -19,7 +19,7 @@ class CoffeeBreakSearch extends menuCoffeeBreak
     {
         return [
             [['id'], 'integer'],
-            [['nombre', 'categoria', 'imagen_url', 'estado'], 'safe'],
+            [['nombre', 'categoria', 'imagen', 'estado'], 'safe'],
         ];
     }
 
@@ -61,7 +61,6 @@ class CoffeeBreakSearch extends menuCoffeeBreak
 
         $query->andFilterWhere(['like', 'nombre', $this->nombre])
             ->andFilterWhere(['like', 'categoria', $this->categoria])
-            ->andFilterWhere(['like', 'imagen_url', $this->imagen_url])
             ->andFilterWhere(['like', 'estado', $this->estado]);
 
         return $dataProvider;

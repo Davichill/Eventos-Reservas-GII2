@@ -19,7 +19,7 @@ class MenuCoctelSearch extends menuCoctel
     {
         return [
             [['id'], 'integer'],
-            [['nombre', 'categoria', 'subcategoria', 'imagen_url', 'estado'], 'safe'],
+            [['nombre', 'categoria', 'subcategoria', 'imagen', 'estado'], 'safe'],
         ];
     }
 
@@ -50,20 +50,20 @@ class MenuCoctelSearch extends menuCoctel
         $this->load($params);
 
         if (!$this->validate()) {
-            // uncomment the following line if you do not want to return any records when validation fails
-            // $query->where('0=1');
             return $dataProvider;
         }
 
         $query->andFilterWhere([
             'id' => $this->id,
+            'estado' => $this->estado, // Movido aquí por ser entero/exacto
         ]);
 
         $query->andFilterWhere(['like', 'nombre', $this->nombre])
             ->andFilterWhere(['like', 'categoria', $this->categoria])
-            ->andFilterWhere(['like', 'subcategoria', $this->subcategoria])
-            ->andFilterWhere(['like', 'imagen_url', $this->imagen_url])
-            ->andFilterWhere(['like', 'estado', $this->estado]);
+            ->andFilterWhere(['like', 'subcategoria', $this->subcategoria]);
+
+        // ELIMINADO: ->andFilterWhere(['like', 'imagen', $this->imagen_url])
+        // No se filtra por contenido binario.
 
         return $dataProvider;
     }

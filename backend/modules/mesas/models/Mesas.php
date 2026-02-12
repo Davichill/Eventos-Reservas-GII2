@@ -14,7 +14,7 @@ use Yii;
 class Mesas extends \yii\db\ActiveRecord
 {
 
-
+    public $imageFile;
     /**
      * {@inheritdoc}
      */
@@ -29,11 +29,14 @@ class Mesas extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['imagen_url'], 'default', 'value' => null],
+            
             [['id', 'nombre'], 'required'],
             [['id'], 'integer'],
             [['nombre'], 'string', 'max' => 50],
-            [['imagen_url'], 'string', 'max' => 255],
+            [['imageFile'], 'file', 'skipOnEmpty' => true, 'extensions' => 'png, jpg, jpeg'],
+
+            // Usamos 'imagen' que es tu columna real
+            [['imagen'], 'safe'],
             [['id'], 'unique'],
         ];
     }
@@ -46,7 +49,7 @@ class Mesas extends \yii\db\ActiveRecord
         return [
             'id' => 'ID',
             'nombre' => 'Nombre',
-            'imagen_url' => 'Imagen Url',
+            'imagen' => 'Foto del Seminario',
         ];
     }
 

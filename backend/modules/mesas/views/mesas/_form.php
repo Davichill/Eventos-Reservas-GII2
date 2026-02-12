@@ -15,7 +15,7 @@ use yii\widgets\ActiveForm;
 
     <?= $form->field($model, 'nombre')->textInput(['maxlength' => true]) ?>
 
-    <?= $form->field($model, 'imagen_url')->textInput(['maxlength' => true]) ?>
+   <?= $form->field($model, 'imageFile')->fileInput() ?>
 
   
 	<?php if (!Yii::$app->request->isAjax){ ?>

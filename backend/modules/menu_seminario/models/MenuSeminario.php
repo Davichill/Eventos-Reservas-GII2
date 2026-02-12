@@ -11,11 +11,12 @@ use Yii;
  * @property string $nombre
  * @property string $seccion
  * @property string $categoria
- * @property string|null $imagen_url
+ * @property resource|null $imagen  // Cambiado de imagen_url a imagen
  * @property int|null $estado
  */
 class MenuSeminario extends \yii\db\ActiveRecord
 {
+    public $imageFile;
 
     /**
      * ENUM field values
@@ -24,50 +25,43 @@ class MenuSeminario extends \yii\db\ActiveRecord
     const SECCION_PLATO_FUERTE = 'PLATO FUERTE';
     const SECCION_POSTRE = 'POSTRE';
 
-    /**
-     * {@inheritdoc}
-     */
     public static function tableName()
     {
         return 'menu_seminario';
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function rules()
     {
         return [
-            [['imagen_url'], 'default', 'value' => null],
+            // HE ELIMINADO la línea de 'imagen_url' que causaba el error
             [['estado'], 'default', 'value' => 1],
             [['nombre', 'seccion', 'categoria'], 'required'],
             [['seccion'], 'string'],
             [['estado'], 'integer'],
-            [['nombre', 'imagen_url'], 'string', 'max' => 255],
+            [['imageFile'], 'file', 'skipOnEmpty' => true, 'extensions' => 'png, jpg, jpeg'],
+            
+            // Usamos 'imagen' que es tu columna real
+            [['imagen'], 'safe'],
             [['categoria'], 'string', 'max' => 100],
             ['seccion', 'in', 'range' => array_keys(self::optsSeccion())],
         ];
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function attributeLabels()
     {
         return [
             'id' => 'ID',
             'nombre' => 'Nombre',
-            'seccion' => 'Seccion',
-            'categoria' => 'Categoria',
-            'imagen_url' => 'Imagen Url',
+            'seccion' => 'Sección',
+            'categoria' => 'Categoría',
+            'imagen' => 'Foto del Seminario',
+            'imageFile' => 'Archivo de Imagen',
             'estado' => 'Estado',
         ];
     }
 
-
     /**
-     * column seccion ENUM value labels
-     * @return string[]
+     * Opciones para el dropdown de Sección
      */
     public static function optsSeccion()
     {
@@ -78,50 +72,13 @@ class MenuSeminario extends \yii\db\ActiveRecord
         ];
     }
 
-    /**
-     * @return string
-     */
     public function displaySeccion()
     {
-        return self::optsSeccion()[$this->seccion];
+        return self::optsSeccion()[$this->seccion] ?? $this->seccion;
     }
 
-    /**
-     * @return bool
-     */
-    public function isSeccionEntrada()
-    {
-        return $this->seccion === self::SECCION_ENTRADA;
-    }
-
-    public function setSeccionToEntrada()
-    {
-        $this->seccion = self::SECCION_ENTRADA;
-    }
-
-    /**
-     * @return bool
-     */
-    public function isSeccionPlatoFuerte()
-    {
-        return $this->seccion === self::SECCION_PLATO_FUERTE;
-    }
-
-    public function setSeccionToPlatoFuerte()
-    {
-        $this->seccion = self::SECCION_PLATO_FUERTE;
-    }
-
-    /**
-     * @return bool
-     */
-    public function isSeccionPostre()
-    {
-        return $this->seccion === self::SECCION_POSTRE;
-    }
-
-    public function setSeccionToPostre()
-    {
-        $this->seccion = self::SECCION_POSTRE;
-    }
+    // Métodos de utilidad para la lógica de negocio
+    public function isSeccionEntrada() { return $this->seccion === self::SECCION_ENTRADA; }
+    public function isSeccionPlatoFuerte() { return $this->seccion === self::SECCION_PLATO_FUERTE; }
+    public function isSeccionPostre() { return $this->seccion === self::SECCION_POSTRE; }
 }

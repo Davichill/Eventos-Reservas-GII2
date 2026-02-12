@@ -19,7 +19,7 @@ class MesasSearch extends Mesas
     {
         return [
             [['id'], 'integer'],
-            [['nombre', 'imagen_url'], 'safe'],
+            [['nombre', 'imagen'], 'safe'],
         ];
     }
 
@@ -59,8 +59,8 @@ class MesasSearch extends Mesas
             'id' => $this->id,
         ]);
 
-        $query->andFilterWhere(['like', 'nombre', $this->nombre])
-            ->andFilterWhere(['like', 'imagen_url', $this->imagen_url]);
+        $query->andFilterWhere(['like', 'nombre', $this->nombre]);
+            
 
         return $dataProvider;
     }

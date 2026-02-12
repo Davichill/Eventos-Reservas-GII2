@@ -16,7 +16,7 @@ use Yii;
 class MenuCoffeeBreak extends \yii\db\ActiveRecord
 {
 
-
+    public $imageFile;
     /**
      * {@inheritdoc}
      */
@@ -31,11 +31,15 @@ class MenuCoffeeBreak extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['imagen_url'], 'default', 'value' => null],
+            [['imagen'], 'default', 'value' => null],
             [['estado'], 'default', 'value' => 1],
             [['nombre', 'categoria'], 'required'],
             [['estado'], 'integer'],
-            [['nombre', 'imagen_url'], 'string', 'max' => 255],
+           // Regla para la variable temporal del formulario
+        [['imageFile'], 'file', 'skipOnEmpty' => true, 'extensions' => 'png, jpg, jpeg'],
+        
+        // El campo 'imagen' (BLOB) de la base de datos
+        [['imagen'], 'safe'],
             [['categoria'], 'string', 'max' => 100],
         ];
     }
@@ -49,7 +53,7 @@ class MenuCoffeeBreak extends \yii\db\ActiveRecord
             'id' => 'ID',
             'nombre' => 'Nombre',
             'categoria' => 'Categoria',
-            'imagen_url' => 'Imagen Url',
+            'imagen' => 'Imagen',
             'estado' => 'Estado',
         ];
     }

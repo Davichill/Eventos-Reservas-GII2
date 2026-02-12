@@ -1,138 +1,207 @@
 <?php
-use yii\helpers\Html;
+use yii\helpers\Url;
 use yii\helpers\Json;
 
 $this->title = 'Panel de Control | GO Quito';
 
-/**
- * 1. REGISTRO DE RECURSOS (Assets)
- */
-// Librería de Gráficos
-$this->registerJsFile('https://cdn.jsdelivr.net/npm/chart.js', ['position' => \yii\web\View::POS_HEAD]);
+// Font Awesome
+$this->registerCssFile('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
 
-// Estilos específicos (Asegúrate de que estas rutas existan en backend/web/css/...)
-$this->registerCssFile('@web/css/graficos.css');
+// Chart.js
+$this->registerJsFile('https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js', [
+    'position' => \yii\web\View::POS_END
+]);
 
-// Lógica de Gráficos (Depende de jQuery)
-$this->registerJsFile('@web/js/graficos.js', ['depends' => [\yii\web\JqueryAsset::class]]);
+// Dashboard JS
+$this->registerJsFile(Url::to('@web/js/graficos.js'), [
+    'depends' => [\yii\web\JqueryAsset::class],
+    'position' => \yii\web\View::POS_END
+]);
 ?>
 
-<div class="dashboard-index">
-    <div class="main-content">
-        <header class="top-bar mb-4" style="padding: 20px; background: white; border-bottom: 1px solid #eee;">
-            <h2><i class="fas fa-chart-line"></i> Resumen de Ingresos y Pagos</h2>
-        </header>
-
-        <div class="dashboard-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
-
-            <div class="card-grafico p-3 shadow-sm bg-white" id="card-pagos">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h3 class="m-0">Estado de Cobros Totales</h3>
-                    <button class="btn btn-sm btn-outline-primary" onclick="actualizarTodo()">
-                        <i class="fas fa-sync-alt"></i> Actualizar
-                    </button>
+<div class="dashboard-index p-3">
+    <!-- Estadísticas Rápidas -->
+    <div class="row">
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-info">
+                <div class="inner">
+                    <h3 id="eventosHoy">0</h3>
+                    <p>Eventos Hoy</p>
                 </div>
-
-                <div class="filtros-container mb-3" id="filtros-pagos">
-                    <button class="btn btn-xs btn-default active" onclick="cambiarFiltroPagos('7dias')" id="filtro-pagos-7dias">7 días</button>
-                    <button class="btn btn-xs btn-default" onclick="cambiarFiltroPagos('30dias')" id="filtro-pagos-30dias">30 días</button>
-                    <button class="btn btn-xs btn-default" onclick="cambiarFiltroPagos('todos')" id="filtro-pagos-todos">Todos</button>
+                <div class="icon">
+                    <i class="fas fa-calendar-day"></i>
                 </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-success">
+                <div class="inner">
+                    <h3 id="ingresosProyectados">$0.00</h3>
+                    <p>Ingresos Proyectados</p>
+                    <small>Este mes</small>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-dollar-sign"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-warning">
+                <div class="inner">
+                    <h3 id="eventosPendientes">0</h3>
+                    <p>Eventos Pendientes</p>
+                    <small>Próximos 7 días</small>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-primary">
+                <div class="inner">
+                    <h3 id="ocupacionTotal">0%</h3>
+                    <p>Ocupación</p>
+                    <small>Salones hoy</small>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                <div class="row align-items-center">
-                    <div class="col-md-6">
-                        <canvas id="pagoPieChart"></canvas>
-                    </div>
-
-                    <div class="col-md-6">
-                        <div class="info-box bg-light mb-2">
-                            <div class="info-box-content">
-                                <span class="info-box-text">Total Proyectado</span>
-                                <span class="info-box-number h4" id="totalInfo">$0.00</span>
-                                <small id="subtituloTotal">Cargando...</small>
+    <!-- Gráficos -->
+    <div class="row">
+        <!-- Estado de Cobros -->
+        <div class="col-md-6">
+            <div class="card card-primary card-outline">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-chart-pie"></i> Estado de Cobros
+                    </h3>
+                    <div class="card-tools">
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-tool dropdown-toggle" data-toggle="dropdown">
+                                Período
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-right">
+                                <a href="#" class="dropdown-item btn-periodo-cobros active" onclick="Dashboard.cambiarPeriodoCobros('7dias', this)">Últimos 7 días</a>
+                                <a href="#" class="dropdown-item btn-periodo-cobros" onclick="Dashboard.cambiarPeriodoCobros('30dias', this)">Últimos 30 días</a>
+                                <a href="#" class="dropdown-item btn-periodo-cobros" onclick="Dashboard.cambiarPeriodoCobros('mes', this)">Este mes</a>
+                                <a href="#" class="dropdown-item btn-periodo-cobros" onclick="Dashboard.cambiarPeriodoCobros('todos', this)">Todo</a>
                             </div>
                         </div>
-
-                        <div id="contadorPagado" class="info-box bg-success mb-2" style="display: none;">
-                            <div class="info-box-content">
-                                <span class="info-box-text">Total Pagado</span>
-                                <span class="info-box-number" id="totalPagado">$0.00</span>
-                                <small id="porcentajePagado">0%</small>
-                            </div>
-                        </div>
+                        <button type="button" class="btn btn-tool" onclick="Dashboard.actualizarTodo()">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
                     </div>
                 </div>
-            </div>
-
-            <div class="card-grafico p-3 shadow-sm bg-white">
-                <h3><i class="fas fa-building"></i> Ocupación por Salones</h3>
-                <div class="filtros-container mb-3" id="filtros-salones">
-                    <button class="btn btn-xs btn-default active" onclick="cambiarFiltroSalones('todos')">Todos</button>
-                </div>
-                <div style="height: 250px;">
-                    <canvas id="ocupacionSalonesChart"></canvas>
-                </div>
-            </div>
-
-            <div class="card-grafico p-3 shadow-sm bg-white" style="grid-column: span 2;">
-                <h3>Ocupación de Eventos por Día</h3>
-                <div class="filtros-container mb-3">
-                    <button class="btn btn-xs btn-default active" onclick="cambiarFiltroEventos('7prox')">Próximos 7 días</button>
-                </div>
-                <div style="height: 300px;">
-                    <canvas id="eventosDiaChart"></canvas>
-                </div>
-            </div>
-
-            <div class="card-grafico p-3 shadow-sm bg-white" style="grid-column: span 2;">
-                <div class="calendario-container">
-                    <h3 class="text-center mb-4"><i class="fas fa-calendar-alt"></i> Calendario de Eventos</h3>
+                <div class="card-body">
+                    <canvas id="pagoPieChart" style="min-height: 250px; height: 250px;"></canvas>
                     
-                    <div class="calendario-header d-flex justify-content-between align-items-center mb-3">
-                        <div class="btn-group">
-                            <button class="btn btn-sm btn-default" onclick="mesAnterior()">← Mes</button>
+                    <div class="mt-4">
+                        <div class="d-flex justify-content-between border-bottom pb-2">
+                            <span><i class="fas fa-check-circle text-success"></i> Total Pagado:</span>
+                            <span id="totalPagado" class="font-weight-bold text-success">$0.00</span>
                         </div>
-                        <div class="text-center">
-                            <h4 id="titulo" class="m-0 text-uppercase"></h4>
-                            <small id="anio" class="text-muted"></small>
+                        <div class="d-flex justify-content-between border-bottom pb-2 mt-2">
+                            <span><i class="fas fa-clock text-warning"></i> Total Pendiente:</span>
+                            <span id="totalPendiente" class="font-weight-bold text-warning">$0.00</span>
                         </div>
-                        <div class="btn-group">
-                            <button class="btn btn-sm btn-default" onclick="mesSiguiente()">Mes →</button>
+                        <div class="d-flex justify-content-between mt-2">
+                            <span><i class="fas fa-chart-line text-primary"></i> Total Proyectado:</span>
+                            <span id="totalProyectado" class="font-weight-bold text-primary">$0.00</span>
                         </div>
                     </div>
-
-                    <div class="calendario-grid-header" style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-weight: bold;">
-                        <div>Lun</div><div>Mar</div><div>Mie</div><div>Jue</div><div>Vie</div><div>Sab</div><div>Dom</div>
-                    </div>
-                    <div id="dias" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px;"></div>
                 </div>
             </div>
+        </div>
 
+        <!-- Ocupación por Salones -->
+        <div class="col-md-6">
+            <div class="card card-primary card-outline">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-building"></i> Ocupación por Salones
+                    </h3>
+                    <div class="card-tools">
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-tool dropdown-toggle" data-toggle="dropdown">
+                                Período
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-right">
+                                <a href="#" class="dropdown-item btn-periodo-ocupacion active" onclick="Dashboard.cambiarPeriodoOcupacion('todos', this)">Todo</a>
+                                <a href="#" class="dropdown-item btn-periodo-ocupacion" onclick="Dashboard.cambiarPeriodoOcupacion('mes', this)">Este mes</a>
+                                <a href="#" class="dropdown-item btn-periodo-ocupacion" onclick="Dashboard.cambiarPeriodoOcupacion('30dias', this)">Últimos 30 días</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <canvas id="ocupacionSalonesChart" style="min-height: 250px; height: 250px;"></canvas>
+                    
+                    <!-- Leyenda -->
+                    <div class="mt-3 text-center text-muted small">
+                        <i class="fas fa-info-circle"></i> Horas totales de ocupación por salón
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Créditos -->
+    <div class="row mt-3">
+        <div class="col-12 text-center text-muted">
+            <small>Datos actualizados en tiempo real • GO Quito</small>
         </div>
     </div>
 </div>
 
 <?php
-/**
- * 2. CONEXIÓN PHP -> JAVASCRIPT
- */
-$datosJson = Json::encode($statsPago);
+// CONFIGURACIÓN CORREGIDA - con el nombre correcto de tu proyecto
+$config = [
+    'urls' => [
+        'estadisticas' => Url::to(['/api-graficos/estadisticas-rapidas']),
+        'cobros' => Url::to(['/api-graficos/estado-cobros']),
+        'ocupacion' => Url::to(['/api-graficos/ocupacion-salones']),
+    ]
+];
 
-$script = <<< JS
-    // Datos reales de la base de datos
-    var datosPagos = $datosJson;
+$this->registerJs("
+    window.AppConfig = " . Json::encode($config) . ";
+    console.log('✅ AppConfig cargado:', window.AppConfig);
+", \yii\web\View::POS_HEAD);
+?>
 
-    $(document).ready(function() {
-        // Inicializar los gráficos si la función existe en graficos.js
-        if (typeof inicializarGraficos === 'function') {
-            inicializarGraficos(datosPagos);
-        }
-        
-        // Inicializar calendario si existe en tu JS
-        if (typeof renderizarCalendario === 'function') {
-            renderizarCalendario(); 
-        }
-    });
-JS;
-$this->registerJs($script, \yii\web\View::POS_END);
+<?php
+// CSS FORZADO para que los canvas sean visibles
+$this->registerCss("
+    canvas {
+        display: block !important;
+        width: 100% !important;
+        height: 300px !important;
+        background: white !important;
+        border: 2px solid #dee2e6 !important;
+        border-radius: 8px !important;
+        padding: 10px !important;
+        margin-top: 10px !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+    
+    #pagoPieChart, #ocupacionSalonesChart {
+        min-height: 300px !important;
+        max-height: 400px !important;
+        background: white !important;
+    }
+    
+    .card-body {
+        overflow: visible !important;
+        min-height: 350px !important;
+    }
+");
 ?>

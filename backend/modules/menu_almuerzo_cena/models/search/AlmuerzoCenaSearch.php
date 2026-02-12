@@ -8,9 +8,9 @@ use yii\data\ActiveDataProvider;
 use backend\modules\menu_almuerzo_cena\models\MenuAlmuerzoCena;
 
 /**
- * ReservasSearch represents the model behind the search form about `backend\modules\menu_almuerzo_cena\models\MenuAlmuerzoCena`.
+ * AlmuerzoCenaSearch represents the model behind the search form about `backend\modules\menu_almuerzo_cena\models\MenuAlmuerzoCena`.
  */
-class ReservasSearch extends MenuAlmuerzoCena
+class AlmuerzoCenaSearch extends MenuAlmuerzoCena
 {
     /**
      * @inheritdoc
@@ -19,7 +19,8 @@ class ReservasSearch extends MenuAlmuerzoCena
     {
         return [
             [['id'], 'integer'],
-            [['nombre', 'tiempo', 'subcategoria', 'imagen_url', 'estado'], 'safe'],
+            [['nombre', 'tiempo', 'subcategoria', 'imagen', 'estado'], 'safe'],
+            [['precio_costo', 'precio_venta'], 'number'],
         ];
     }
 
@@ -57,12 +58,14 @@ class ReservasSearch extends MenuAlmuerzoCena
 
         $query->andFilterWhere([
             'id' => $this->id,
+            'precio_costo' => $this->precio_costo,
+            'precio_venta' => $this->precio_venta,
         ]);
 
         $query->andFilterWhere(['like', 'nombre', $this->nombre])
             ->andFilterWhere(['like', 'tiempo', $this->tiempo])
             ->andFilterWhere(['like', 'subcategoria', $this->subcategoria])
-            ->andFilterWhere(['like', 'imagen_url', $this->imagen_url])
+            ->andFilterWhere(['like', 'imagen', $this->imagen])
             ->andFilterWhere(['like', 'estado', $this->estado]);
 
         return $dataProvider;

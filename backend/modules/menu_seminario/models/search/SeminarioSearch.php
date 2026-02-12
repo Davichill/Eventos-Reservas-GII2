@@ -19,7 +19,7 @@ class SeminarioSearch extends menuSeminario
     {
         return [
             [['id'], 'integer'],
-            [['nombre', 'seccion', 'categoria', 'imagen_url', 'estado'], 'safe'],
+            [['nombre', 'seccion', 'categoria', 'imagen', 'estado'], 'safe'],
         ];
     }
 
@@ -62,7 +62,6 @@ class SeminarioSearch extends menuSeminario
         $query->andFilterWhere(['like', 'nombre', $this->nombre])
             ->andFilterWhere(['like', 'seccion', $this->seccion])
             ->andFilterWhere(['like', 'categoria', $this->categoria])
-            ->andFilterWhere(['like', 'imagen_url', $this->imagen_url])
             ->andFilterWhere(['like', 'estado', $this->estado]);
 
         return $dataProvider;

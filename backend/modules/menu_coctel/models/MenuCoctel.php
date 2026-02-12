@@ -11,13 +11,13 @@ use Yii;
  * @property string $nombre
  * @property string|null $categoria
  * @property string $subcategoria
- * @property string|null $imagen_url
+ * @property string|null $imagen
  * @property int|null $estado
  */
 class MenuCoctel extends \yii\db\ActiveRecord
 {
 
-
+public $imageFile;
     /**
      * {@inheritdoc}
      */
@@ -32,11 +32,13 @@ class MenuCoctel extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['categoria', 'imagen_url'], 'default', 'value' => null],
+            [['categoria', 'imagen'], 'default', 'value' => null],
             [['estado'], 'default', 'value' => 1],
             [['nombre', 'subcategoria'], 'required'],
             [['estado'], 'integer'],
-            [['nombre', 'imagen_url'], 'string', 'max' => 255],
+            [['imageFile'], 'file', 'skipOnEmpty' => true, 'extensions' => 'png, jpg, jpeg'],
+            // El campo 'imagen' es donde se guarda el binario (BLOB)
+            [['imagen'], 'safe'],
             [['categoria', 'subcategoria'], 'string', 'max' => 100],
         ];
     }
@@ -51,7 +53,7 @@ class MenuCoctel extends \yii\db\ActiveRecord
             'nombre' => 'Nombre',
             'categoria' => 'Categoria',
             'subcategoria' => 'Subcategoria',
-            'imagen_url' => 'Imagen Url',
+            'imagen' => 'Imagen',
             'estado' => 'Estado',
         ];
     }

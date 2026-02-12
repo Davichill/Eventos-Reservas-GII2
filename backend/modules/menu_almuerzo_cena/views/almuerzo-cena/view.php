@@ -1,6 +1,7 @@
 <?php
 
 use yii\widgets\DetailView;
+use yii\helpers\Html;
 
 /* @var $this yii\web\View */
 /* @var $model backend\modules\menu_almuerzo_cena\models\MenuAlmuerzoCena */
@@ -14,8 +15,22 @@ use yii\widgets\DetailView;
             'nombre',
             'tiempo',
             'subcategoria',
-            'imagen_url:url',
-            'estado',
+            [
+                'attribute' => 'imagen',
+                'format' => 'raw', // Importante para renderizar el HTML de la imagen
+                'value' => function($model) {
+                    if ($model->imagen) {
+                        // Convertimos el binario a Base64
+                        $imageData = base64_encode($model->imagen);
+                        $src = 'data:image/jpeg;base64,' . $imageData;
+                        return Html::img($src, [
+                            'class' => 'img-thumbnail',
+                            'style' => 'max-width:300px; max-height:300px;' // Tamaño para la vista de detalle
+                        ]);
+                    }
+                    return '<span class="text-danger">Sin imagen disponible</span>';
+                },
+            ],
         ],
     ]) ?>
 

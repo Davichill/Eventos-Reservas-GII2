@@ -9,25 +9,29 @@ use yii\widgets\ActiveForm;
 
 <div class="menu-almuerzo-cena-form">
 
-    <?php $form = ActiveForm::begin(); ?>
+    <?php $form = ActiveForm::begin([
+        'options' => ['enctype' => 'multipart/form-data'] // OBLIGATORIO para archivos
+    ]); ?>
 
     <?= $form->field($model, 'nombre')->textInput(['maxlength' => true]) ?>
 
-    <?= $form->field($model, 'tiempo')->dropDownList([ 'Entradas' => 'Entradas', 'Plato Fuerte' => 'Plato Fuerte', 'Postres' => 'Postres', ], ['prompt' => '']) ?>
+    <?= $form->field($model, 'tiempo')->dropDownList([ 
+        'Entradas' => 'Entradas', 
+        'Plato Fuerte' => 'Plato Fuerte', 
+        'Postres' => 'Postres', 
+    ], ['prompt' => 'Seleccione tiempo...']) ?>
 
     <?= $form->field($model, 'subcategoria')->textInput(['maxlength' => true]) ?>
 
-    <?= $form->field($model, 'imagen_url')->textInput(['maxlength' => true]) ?>
+    <?= $form->field($model, 'imageFile')->fileInput() ?>
 
-    <?= $form->field($model, 'estado')->textInput() ?>
+     
 
-  
-	<?php if (!Yii::$app->request->isAjax){ ?>
-	  	<div class="form-group">
-	        <?= Html::submitButton($model->isNewRecord ? 'Create' : 'Update', ['class' => $model->isNewRecord ? 'btn btn-success' : 'btn btn-primary']) ?>
-	    </div>
-	<?php } ?>
+    <?php if (!Yii::$app->request->isAjax){ ?>
+        <div class="form-group">
+            <?= Html::submitButton($model->isNewRecord ? 'Crear' : 'Actualizar', ['class' => $model->isNewRecord ? 'btn btn-success' : 'btn btn-primary']) ?>
+        </div>
+    <?php } ?>
 
     <?php ActiveForm::end(); ?>
-    
 </div>

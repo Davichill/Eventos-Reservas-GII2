@@ -17,6 +17,7 @@ use Yii;
 class MenuAlmuerzoCena extends \yii\db\ActiveRecord
 {
 
+    public $imageFile;
     /**
      * ENUM field values
      */
@@ -38,13 +39,18 @@ class MenuAlmuerzoCena extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['subcategoria', 'imagen_url'], 'default', 'value' => null],
-            [['estado'], 'default', 'value' => 1],
             [['nombre', 'tiempo'], 'required'],
             [['tiempo'], 'string'],
             [['estado'], 'integer'],
-            [['nombre', 'imagen_url'], 'string', 'max' => 255],
+            [['estado'], 'default', 'value' => 1],
             [['subcategoria'], 'string', 'max' => 100],
+
+            // Regla para el archivo físico (imageFile)
+            [['imageFile'], 'file', 'skipOnEmpty' => true, 'extensions' => 'png, jpg, jpeg', 'maxSize' => 1024 * 1024 * 2], // max 2MB
+
+            // El campo 'imagen' recibirá el binario, no lo validamos como string
+            [['imagen'], 'safe'],
+
             ['tiempo', 'in', 'range' => array_keys(self::optsTiempo())],
         ];
     }
@@ -59,12 +65,21 @@ class MenuAlmuerzoCena extends \yii\db\ActiveRecord
             'nombre' => 'Nombre',
             'tiempo' => 'Tiempo',
             'subcategoria' => 'Subcategoria',
-            'imagen_url' => 'Imagen Url',
+            'imageFile' => 'Imagen del Plato',
             'estado' => 'Estado',
         ];
     }
 
 
+    public function getImagenEnBase64()
+    {
+        if ($this->imagen) {
+            // Convertimos el binario de la DB a base64 para el tag <img>
+            $base64 = base64_encode($this->imagen);
+            return "data:image/jpeg;base64," . $base64;
+        }
+        return null;
+    }
     /**
      * column tiempo ENUM value labels
      * @return string[]

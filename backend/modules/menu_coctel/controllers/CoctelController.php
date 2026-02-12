@@ -8,8 +8,9 @@ use backend\modules\menu_coctel\models\search\MenuCoctelSearch;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
-use \yii\web\Response;
+use yii\web\Response;
 use yii\helpers\Html;
+use yii\web\UploadedFile; // <--- IMPORTANTE: Necesario para manejar archivos
 
 /**
  * CoctelController implements the CRUD actions for menuCoctel model.
@@ -75,9 +76,6 @@ class CoctelController extends Controller
 
     /**
      * Creates a new menuCoctel model.
-     * For ajax request will return json object
-     * and for non-ajax request if creation is successful, the browser will be redirected to the 'view' page.
-     * @return mixed
      */
     public function actionCreate()
     {
@@ -85,9 +83,6 @@ class CoctelController extends Controller
         $model = new menuCoctel();  
 
         if($request->isAjax){
-            /*
-            *   Process for ajax request
-            */
             Yii::$app->response->format = Response::FORMAT_JSON;
             if($request->isGet){
                 return [
@@ -97,49 +92,48 @@ class CoctelController extends Controller
                     ]),
                     'footer'=> Html::button('Close',['class'=>'btn btn-default pull-left','data-dismiss'=>"modal"]).
                                 Html::button('Save',['class'=>'btn btn-primary','type'=>"submit"])
-        
                 ];         
-            }else if($model->load($request->post()) && $model->save()){
-                return [
-                    'forceReload'=>'#crud-datatable-pjax',
-                    'title'=> "Create new menuCoctel",
-                    'content'=>'<span class="text-success">Create menuCoctel success</span>',
-                    'footer'=> Html::button('Close',['class'=>'btn btn-default pull-left','data-dismiss'=>"modal"]).
-                            Html::a('Create More',['create'],['class'=>'btn btn-primary','role'=>'modal-remote'])
-        
-                ];         
-            }else{           
-                return [
-                    'title'=> "Create new menuCoctel",
-                    'content'=>$this->renderAjax('create', [
-                        'model' => $model,
-                    ]),
-                    'footer'=> Html::button('Close',['class'=>'btn btn-default pull-left','data-dismiss'=>"modal"]).
-                                Html::button('Save',['class'=>'btn btn-primary','type'=>"submit"])
-        
-                ];         
+            } else if($model->load($request->post())){
+                
+                // LÓGICA DE IMAGEN BINARIA
+                $model->imageFile = UploadedFile::getInstance($model, 'imageFile');
+                if ($model->imageFile) {
+                    $model->imagen = file_get_contents($model->imageFile->tempName);
+                }
+
+                if($model->save()){
+                    return [
+                        'forceReload'=>'#crud-datatable-pjax',
+                        'title'=> "Create new menuCoctel",
+                        'content'=>'<span class="text-success">Create menuCoctel success</span>',
+                        'footer'=> Html::button('Close',['class'=>'btn btn-default pull-left','data-dismiss'=>"modal"]).
+                                Html::a('Create More',['create'],['class'=>'btn btn-primary','role'=>'modal-remote'])
+                    ];         
+                }
             }
+            // En caso de error de validación
+            return [
+                'title'=> "Create new menuCoctel",
+                'content'=>$this->renderAjax('create', ['model' => $model]),
+                'footer'=> Html::button('Close',['class'=>'btn btn-default pull-left','data-dismiss'=>"modal"]).
+                            Html::button('Save',['class'=>'btn btn-primary','type'=>"submit"])
+            ];
         }else{
-            /*
-            *   Process for non-ajax request
-            */
-            if ($model->load($request->post()) && $model->save()) {
-                return $this->redirect(['view', 'id' => $model->id]);
-            } else {
-                return $this->render('create', [
-                    'model' => $model,
-                ]);
+            if ($model->load($request->post())) {
+                $model->imageFile = UploadedFile::getInstance($model, 'imageFile');
+                if ($model->imageFile) {
+                    $model->imagen = file_get_contents($model->imageFile->tempName);
+                }
+                if($model->save()){
+                    return $this->redirect(['view', 'id' => $model->id]);
+                }
             }
+            return $this->render('create', ['model' => $model]);
         }
-       
     }
 
     /**
      * Updates an existing menuCoctel model.
-     * For ajax request will return json object
-     * and for non-ajax request if update is successful, the browser will be redirected to the 'view' page.
-     * @param integer $id
-     * @return mixed
      */
     public function actionUpdate($id)
     {
@@ -147,9 +141,6 @@ class CoctelController extends Controller
         $model = $this->findModel($id);       
 
         if($request->isAjax){
-            /*
-            *   Process for ajax request
-            */
             Yii::$app->response->format = Response::FORMAT_JSON;
             if($request->isGet){
                 return [
@@ -160,46 +151,48 @@ class CoctelController extends Controller
                     'footer'=> Html::button('Close',['class'=>'btn btn-default pull-left','data-dismiss'=>"modal"]).
                                 Html::button('Save',['class'=>'btn btn-primary','type'=>"submit"])
                 ];         
-            }else if($model->load($request->post()) && $model->save()){
-                return [
-                    'forceReload'=>'#crud-datatable-pjax',
-                    'title'=> "menuCoctel #".$id,
-                    'content'=>$this->renderAjax('view', [
-                        'model' => $model,
-                    ]),
-                    'footer'=> Html::button('Close',['class'=>'btn btn-default pull-left','data-dismiss'=>"modal"]).
-                            Html::a('Edit',['update','id'=>$id],['class'=>'btn btn-primary','role'=>'modal-remote'])
-                ];    
-            }else{
-                 return [
-                    'title'=> "Update menuCoctel #".$id,
-                    'content'=>$this->renderAjax('update', [
-                        'model' => $model,
-                    ]),
-                    'footer'=> Html::button('Close',['class'=>'btn btn-default pull-left','data-dismiss'=>"modal"]).
-                                Html::button('Save',['class'=>'btn btn-primary','type'=>"submit"])
-                ];        
+            }else if($model->load($request->post())){
+                
+                // LÓGICA DE IMAGEN BINARIA EN UPDATE
+                $model->imageFile = UploadedFile::getInstance($model, 'imageFile');
+                if ($model->imageFile) {
+                    $model->imagen = file_get_contents($model->imageFile->tempName);
+                }
+
+                if($model->save()){
+                    return [
+                        'forceReload'=>'#crud-datatable-pjax',
+                        'title'=> "menuCoctel #".$id,
+                        'content'=>$this->renderAjax('view', [
+                            'model' => $model,
+                        ]),
+                        'footer'=> Html::button('Close',['class'=>'btn btn-default pull-left','data-dismiss'=>"modal"]).
+                                Html::a('Edit',['update','id'=>$id],['class'=>'btn btn-primary','role'=>'modal-remote'])
+                    ];    
+                }
             }
+            return [
+                'title'=> "Update menuCoctel #".$id,
+                'content'=>$this->renderAjax('update', ['model' => $model]),
+                'footer'=> Html::button('Close',['class'=>'btn btn-default pull-left','data-dismiss'=>"modal"]).
+                            Html::button('Save',['class'=>'btn btn-primary','type'=>"submit"])
+            ];
         }else{
-            /*
-            *   Process for non-ajax request
-            */
-            if ($model->load($request->post()) && $model->save()) {
-                return $this->redirect(['view', 'id' => $model->id]);
-            } else {
-                return $this->render('update', [
-                    'model' => $model,
-                ]);
+            if ($model->load($request->post())) {
+                $model->imageFile = UploadedFile::getInstance($model, 'imageFile');
+                if ($model->imageFile) {
+                    $model->imagen = file_get_contents($model->imageFile->tempName);
+                }
+                if($model->save()){
+                    return $this->redirect(['view', 'id' => $model->id]);
+                }
             }
+            return $this->render('update', ['model' => $model]);
         }
     }
 
     /**
      * Delete an existing menuCoctel model.
-     * For ajax request will return json object
-     * and for non-ajax request if deletion is successful, the browser will be redirected to the 'index' page.
-     * @param integer $id
-     * @return mixed
      */
     public function actionDelete($id)
     {
@@ -207,58 +200,35 @@ class CoctelController extends Controller
         $this->findModel($id)->delete();
 
         if($request->isAjax){
-            /*
-            *   Process for ajax request
-            */
             Yii::$app->response->format = Response::FORMAT_JSON;
             return ['forceClose'=>true,'forceReload'=>'#crud-datatable-pjax'];
         }else{
-            /*
-            *   Process for non-ajax request
-            */
             return $this->redirect(['index']);
         }
-
-
     }
 
-     /**
+    /**
      * Delete multiple existing menuCoctel model.
-     * For ajax request will return json object
-     * and for non-ajax request if deletion is successful, the browser will be redirected to the 'index' page.
-     * @param integer $id
-     * @return mixed
      */
     public function actionBulkDelete()
     {        
         $request = Yii::$app->request;
-        $pks = explode(',', $request->post( 'pks' )); // Array or selected records primary keys
+        $pks = explode(',', $request->post( 'pks' )); 
         foreach ( $pks as $pk ) {
             $model = $this->findModel($pk);
             $model->delete();
         }
 
         if($request->isAjax){
-            /*
-            *   Process for ajax request
-            */
             Yii::$app->response->format = Response::FORMAT_JSON;
             return ['forceClose'=>true,'forceReload'=>'#crud-datatable-pjax'];
         }else{
-            /*
-            *   Process for non-ajax request
-            */
             return $this->redirect(['index']);
         }
-       
     }
 
     /**
      * Finds the menuCoctel model based on its primary key value.
-     * If the model is not found, a 404 HTTP exception will be thrown.
-     * @param integer $id
-     * @return menuCoctel the loaded model
-     * @throws NotFoundHttpException if the model cannot be found
      */
     protected function findModel($id)
     {

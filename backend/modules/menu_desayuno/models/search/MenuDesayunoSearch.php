@@ -19,7 +19,7 @@ class MenuDesayunoSearch extends menuDesayunos
     {
         return [
             [['id'], 'integer'],
-            [['nombre', 'categoria', 'descripcion', 'imagen_url', 'estado'], 'safe'],
+            [['nombre', 'categoria', 'descripcion', 'imagen', 'estado'], 'safe'],
         ];
     }
 
@@ -62,7 +62,6 @@ class MenuDesayunoSearch extends menuDesayunos
         $query->andFilterWhere(['like', 'nombre', $this->nombre])
             ->andFilterWhere(['like', 'categoria', $this->categoria])
             ->andFilterWhere(['like', 'descripcion', $this->descripcion])
-            ->andFilterWhere(['like', 'imagen_url', $this->imagen_url])
             ->andFilterWhere(['like', 'estado', $this->estado]);
 
         return $dataProvider;
