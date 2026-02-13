@@ -1,279 +1,190 @@
-/**
- * GO Quito - Dashboard VERSIÓN FINAL
- * CON DATOS REALES DE TUS MODELOS
- */
+var chartOcupacion = null;
+var chartCobros = null;
+var chartIngresosTipo = null;
 
-const Dashboard = (function() {
-    'use strict';
+// --- GRÁFICO DE OCUPACIÓN ---
+function cargarDatos(dias) {
+    if (!window.AppConfig || !window.AppConfig.urlEventos) return;
 
-    // Instancias de gráficos
-    let charts = {
-        pagoPie: null,
-        ocupacionSalones: null
-    };
+    $.getJSON(window.AppConfig.urlEventos, { dias: dias }, function (res) {
+        if (!res.success) return;
 
-    function init() {
-        console.log('🚀 Dashboard con datos reales inicializando...');
-        
-        // Verificar AppConfig
-        if (!window.AppConfig) {
-            console.error('❌ AppConfig no encontrado');
-            return;
-        }
-        
-        console.log('📡 Conectando a API:', AppConfig.urls);
-        
-        // Cargar TODOS los datos reales
-        cargarEstadisticasReales();
-        cargarCobrosReales();
-        cargarOcupacionReal();
-        
-        // Auto-actualizar cada 5 minutos
-        setInterval(() => {
-            console.log('🔄 Actualizando datos...');
-            cargarEstadisticasReales();
-            cargarCobrosReales();
-            cargarOcupacionReal();
-        }, 300000);
-    }
+        const ctx = document.getElementById('eventosDiaChart').getContext('2d');
+        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, 'rgba(52, 152, 219, 0.3)');
+        gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
 
-    // ========================================
-    // 1. ESTADÍSTICAS RÁPIDAS - DATOS REALES
-    // ========================================
-    function cargarEstadisticasReales() {
-        $.ajax({
-            url: AppConfig.urls.estadisticas,
-            method: 'GET',
-            dataType: 'json',
-            timeout: 10000,
-            success: function(response) {
-                if (response.success) {
-                    const d = response.data;
-                    $('#eventosHoy').text(d.eventos_hoy || 0);
-                    $('#ingresosProyectados').text('$' + formatearMoneda(d.ingresos_proyectados || 0));
-                    $('#eventosPendientes').text(d.eventos_pendientes || 0);
-                    $('#ocupacionTotal').text((d.ocupacion_promedio || 0) + '%');
-                    console.log('✅ Estadísticas reales:', d);
-                }
+        if (chartOcupacion) chartOcupacion.destroy();
+
+        chartOcupacion = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: res.data.labels,
+                datasets: [{
+                    data: res.data.values,
+                    borderColor: '#3498db',
+                    fill: true,
+                    backgroundColor: gradient,
+                    tension: 0.4,
+                    pointRadius: 4
+                }]
             },
-            error: function(xhr, status, error) {
-                console.error('❌ Error cargando estadísticas:', error);
-                // NO usar datos falsos, mostrar error
-                $('#eventosHoy').text('?');
-                $('#ingresosProyectados').text('Error');
-                $('#eventosPendientes').text('?');
-                $('#ocupacionTotal').text('?%');
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
             }
         });
-    }
 
-    // ========================================
-    // 2. ESTADO DE COBROS - DATOS REALES
-    // ========================================
-    function cargarCobrosReales(periodo = '7dias') {
-        const canvas = document.getElementById('pagoPieChart');
-        if (!canvas) return;
+        $('#statTotal').text(res.data.values.reduce((a, b) => a + b, 0));
+        $('#statDias').text(res.data.values.filter(v => v > 0).length);
+        $('#rangoTexto').text('Próximos ' + dias + ' días');
+    });
+}
 
-        $.ajax({
-            url: AppConfig.urls.cobros,
-            data: { periodo: periodo },
-            method: 'GET',
-            dataType: 'json',
-            timeout: 10000,
-            success: function(response) {
-                if (response.success) {
-                    const d = response.data;
-                    
-                    // Actualizar textos
-                    $('#totalPagado').text('$' + formatearMoneda(d.total_pagado || 0));
-                    $('#totalPendiente').text('$' + formatearMoneda(d.total_pendiente || 0));
-                    $('#totalProyectado').text('$' + formatearMoneda(d.total_proyectado || 0));
-                    
-                    // Crear gráfico
-                    crearGraficoPagos(d.total_pagado || 0, d.total_pendiente || 0);
-                    console.log('✅ Cobros reales - Pagado: $' + formatearMoneda(d.total_pagado));
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('❌ Error cargando cobros:', error);
-                $('#totalPagado').text('Error');
-                $('#totalPendiente').text('Error');
-                $('#totalProyectado').text('Error');
-            }
-        });
-    }
+// --- GRÁFICO DE COBROS ---
+function cargarCobros(filtro) {
+    if (!window.AppConfig || !window.AppConfig.urlCobros) return;
 
-    // ========================================
-    // 3. OCUPACIÓN POR SALONES - DATOS REALES
-    // ========================================
-    function cargarOcupacionReal(periodo = 'todos') {
-        const canvas = document.getElementById('ocupacionSalonesChart');
-        if (!canvas) return;
+    $.getJSON(window.AppConfig.urlCobros, { filtro: filtro }, function (res) {
+        if (!res.success) return;
+        const d = res.data;
 
-        $.ajax({
-            url: AppConfig.urls.ocupacion,
-            data: { periodo: periodo },
-            method: 'GET',
-            dataType: 'json',
-            timeout: 10000,
-            success: function(response) {
-                if (response.success) {
-                    const d = response.data;
-                    crearGraficoSalones(d.labels || [], d.horas || [], d.eventos || []);
-                    console.log('✅ Ocupación real -', d.labels?.length || 0, 'salones');
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('❌ Error cargando ocupación:', error);
-            }
-        });
-    }
+        $('#lblProyectado').text(d.proyectado.toLocaleString('en-US') + ' US$');
+        $('#lblPagado').text(d.pagado.toLocaleString('en-US') + ' US$');
+        $('#lblPendiente').text(d.pendiente.toLocaleString('en-US') + ' US$');
+        $('#percPagado').text(d.p_pagado + '%');
+        $('#percPendiente').text(d.p_pend + '%');
+        $('#centroPorcentaje').text(d.p_pagado + '%');
 
-    // ========================================
-    // GRÁFICO DE PAGOS
-    // ========================================
-    function crearGraficoPagos(pagado, pendiente) {
-        const canvas = document.getElementById('pagoPieChart');
-        if (!canvas) return;
-        
-        if (charts.pagoPie) charts.pagoPie.destroy();
-        
-        // Si no hay datos, mostrar gráfico vacío
-        if (pagado === 0 && pendiente === 0) {
-            pagado = 1;
-            pendiente = 1;
-        }
-        
-        charts.pagoPie = new Chart(canvas, {
+        const ctx = document.getElementById('cobrosDonaChart');
+        if (chartCobros) chartCobros.destroy();
+
+        chartCobros = new Chart(ctx, {
             type: 'doughnut',
             data: {
                 labels: ['Pagado', 'Pendiente'],
                 datasets: [{
-                    data: [pagado, pendiente],
-                    backgroundColor: ['#28a745', '#ffc107'],
+                    data: [d.pagado, d.pendiente],
+                    backgroundColor: ['#28a745', '#dc3545'],
                     borderWidth: 0
                 }]
             },
             options: {
+                cutout: '80%',
                 responsive: true,
                 maintainAspectRatio: false,
-                cutout: '70%',
-                plugins: {
-                    legend: { position: 'bottom' },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const value = context.raw || 0;
-                                const total = pagado + pendiente;
-                                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                                return `${context.label}: $${formatearMoneda(value)} (${percentage}%)`;
-                            }
-                        }
-                    }
-                }
+                plugins: { legend: { display: false } }
             }
         });
+    });
+}
+
+// --- GRÁFICO DE INGRESOS POR TIPO ---
+function cargarIngresosTipo(filtro = 'todos') {
+    // Usamos urlTipo que es el nombre que definimos en la vista
+    const url = window.AppConfig.urlTipo || window.AppConfig.urlPromedios; 
+
+    if (!url) {
+        console.error("URL para Ingresos por Tipo no encontrada.");
+        return;
     }
 
-    // ========================================
-    // GRÁFICO DE SALONES
-    // ========================================
-    function crearGraficoSalones(labels, datos, eventos) {
-        const canvas = document.getElementById('ocupacionSalonesChart');
-        if (!canvas) return;
-        
-        if (charts.ocupacionSalones) charts.ocupacionSalones.destroy();
-        
-        // Si no hay datos, mostrar mensaje
-        if (!labels || labels.length === 0) {
-            labels = ['Sin datos'];
-            datos = [0];
-        }
-        
-        charts.ocupacionSalones = new Chart(canvas, {
+    $.getJSON(url, { filtro: filtro }, function (res) {
+        if (!res.success) return;
+
+        const ctx = document.getElementById('ingresosTipoChart');
+        if (!ctx) return;
+
+        if (chartIngresosTipo) chartIngresosTipo.destroy();
+
+        chartIngresosTipo = new Chart(ctx.getContext('2d'), {
             type: 'bar',
             data: {
-                labels: labels,
+                labels: res.labels,
                 datasets: [{
-                    label: 'Horas de ocupación',
-                    data: datos,
-                    backgroundColor: generarColores(labels.length),
-                    borderWidth: 1,
-                    borderRadius: 6
+                    label: 'Monto en USD',
+                    data: res.values,
+                    backgroundColor: '#3498db',
+                    borderRadius: 8
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            afterLabel: function(context) {
-                                const index = context.dataIndex;
-                                if (eventos && eventos[index]) {
-                                    return `📅 Eventos: ${eventos[index]}`;
-                                }
-                                return '';
-                            }
-                        }
-                    }
-                },
                 scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: { display: true, text: 'Horas' }
-                    }
-                }
+                    y: { beginAtZero: true, grid: { color: '#f0f0f0' } },
+                    x: { grid: { display: false } }
+                },
+                plugins: { legend: { display: false } }
             }
         });
-    }
 
-    // ========================================
-    // FUNCIONES AUXILIARES
-    // ========================================
-    function formatearMoneda(valor) {
-        return Number(valor).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
-    }
+        const contenedor = $('#contenedorTarjetasTipo');
+        contenedor.empty();
+        const colores = ['border-info', 'border-success', 'border-danger', 'border-warning'];
 
-    function generarColores(cantidad) {
-        const colores = [
-            '#3498db', '#9b59b6', '#e74c3c', '#f39c12', 
-            '#2ecc71', '#1abc9c', '#e67e22', '#e84342'
-        ];
-        return Array(cantidad).fill().map((_, i) => colores[i % colores.length]);
-    }
+        res.detalles.forEach((item, index) => {
+            const colorClass = colores[index % colores.length];
+            const html = `
+                <div class="card mb-2 bg-light border-left ${colorClass} shadow-sm" style="border-width: 5px !important; border-radius: 8px;">
+                    <div class="card-body p-2 text-center">
+                        <small class="text-muted d-block text-uppercase" style="font-size: 0.7rem;">${item.nombre}</small>
+                        <h5 class="font-weight-bold mb-0">${item.monto}</h5>
+                        <small class="text-muted">${item.porcentaje}</small>
+                    </div>
+                </div>
+            `;
+            contenedor.append(html);
+        });
+    });
+}
 
-    function cambiarPeriodoCobros(periodo, btn) {
-        $('.btn-periodo-cobros').removeClass('active');
-        $(btn).addClass('active');
-        cargarCobrosReales(periodo);
-    }
+//Calendario Pequeño
 
-    function cambiarPeriodoOcupacion(periodo, btn) {
-        $('.btn-periodo-ocupacion').removeClass('active');
-        $(btn).addClass('active');
-        cargarOcupacionReal(periodo);
-    }
+function inicializarCalendario() {
+    var calendarEl = document.getElementById('calendarioEventos');
+    if (!calendarEl || typeof FullCalendar === 'undefined') return;
 
-    function actualizarTodo() {
-        cargarEstadisticasReales();
-        cargarCobrosReales();
-        cargarOcupacionReal();
-    }
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        locale: 'es',
+        headerToolbar: {
+            left: 'prevYear,prev',
+            center: 'title',
+            right: 'next,nextYear'
+        },
+        height: 'auto',
+        events: window.AppConfig.urlCalendario,
+        displayEventTime: false, // No mostrar horas, solo la etiqueta
+        eventContent: function(arg) {
+            // Estilo personalizado para que parezca una etiqueta pequeña
+            let arrayOfDomNodes = [ 
+                $('<span>').text(arg.event.title).addClass('badge p-1 w-100')[0] 
+            ];
+            return { domNodes: arrayOfDomNodes };
+        }
+    });
 
-    // API pública
-    return {
-        init,
-        actualizarTodo,
-        cambiarPeriodoCobros,
-        cambiarPeriodoOcupacion
-    };
-})();
+    calendar.render();
+}
 
-// Inicializar cuando el DOM esté listo
-$(document).ready(function() {
-    if (typeof Chart !== 'undefined' && typeof AppConfig !== 'undefined') {
-        Dashboard.init();
-    }
+$(document).ready(function () {
+    // Cargamos el primero inmediatamente
+    cargarDatos(7);
+
+    // Retrasamos los demás unos milisegundos para no saturar los sockets
+    setTimeout(function() {
+        cargarCobros('todos');
+    }, 200);
+
+    setTimeout(function() {
+        cargarIngresosTipo('todos');
+    }, 400);
+
+    setTimeout(function() {
+        if(typeof inicializarCalendario === "function") {
+            inicializarCalendario();
+        }
+    }, 600);
 });

@@ -72,16 +72,20 @@ class SiteController extends Controller
      */
     public function actionLogin()
     {
+        $this->layout = false;
+
+    
         if (!Yii::$app->user->isGuest) {
             return $this->goHome();
         }
 
         $this->layout = 'blank';
 
-        $model = new LoginForm();
-        if ($model->load(Yii::$app->request->post()) && $model->login()) {
-            return $this->goBack();
-        }
+       $model = new LoginForm();
+    if ($model->load(Yii::$app->request->post()) && $model->login()) {
+        // CAMBIO AQUÍ: En lugar de return $this->goBack();
+        return $this->redirect(['/dashboard/index']); 
+    }
 
         $model->password = '';
 

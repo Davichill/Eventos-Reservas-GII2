@@ -149,4 +149,23 @@ class Clientes extends \yii\db\ActiveRecord
     {
         $this->estado = self::ESTADO_INACTIVO;
     }
+
+    /**
+     * Relación con el modelo User para obtener el nombre del creador
+     */
+    public function getUsuarioCreador()
+    {
+        // Asumiendo que tu tabla de usuarios es la estándar de Yii2
+        return $this->hasOne(\common\models\User::className(), ['id' => 'id_usuario_creador']);
+    }
+
+    /**
+     * Relación con el historial de eventos/reservas
+     */
+    public function getEventos()
+    {
+        // Cambia 'Reservas' por el nombre real de tu modelo de eventos
+        // ['id_cliente' => 'id'] significa: id_cliente en la tabla Reserva coincide con id en Cliente
+        return $this->hasMany(\backend\modules\reservas\models\Reservas::className(), ['id_cliente' => 'id']);
+    }
 }

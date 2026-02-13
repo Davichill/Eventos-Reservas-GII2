@@ -12,6 +12,9 @@ return [
     'basePath' => dirname(__DIR__),
     'controllerNamespace' => 'backend\controllers',
     'bootstrap' => ['log'],
+    
+    // 1. ESTO DEFINE QUE AL ENTRAR AL SITIO SE ABRA EL DASHBOARD POR DEFECTO
+    'defaultRoute' => 'site/index', 
 
     'modules' => [
         'clientes' => ['class' => 'backend\modules\clientes\Module'],
@@ -72,6 +75,8 @@ return [
             'identityClass' => 'common\models\User',
             'enableAutoLogin' => true,
             'identityCookie' => ['name' => '_identity-backend', 'httpOnly' => true],
+            // 2. ESTO DEFINE A DÓNDE MANDAR AL USUARIO SI NO ESTÁ LOGUEADO
+            'loginUrl' => ['site/login'], 
         ],
         'session' => [
             'name' => 'advanced-backend',
@@ -88,7 +93,7 @@ return [
         'errorHandler' => [
             'errorAction' => 'site/error',
         ],
-    ], // Aquí cierra components
+    ],
 
-    'params' => $params, // Params queda fuera de components
-]; // Fin del return
+    'params' => $params,
+];
