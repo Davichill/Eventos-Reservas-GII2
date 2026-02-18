@@ -348,4 +348,14 @@ class Reservas extends \yii\db\ActiveRecord
         }
         return false;
     }
+
+    /**
+     * Relación con los platos del menú
+     */
+    public function getDetallesMenu()
+    {
+        // Según tu imagen de phpMyAdmin, la tabla es 'reserva_detalles_menu' 
+        // y se conecta mediante 'id_reserva'
+        return $this->hasMany(\backend\modules\reservas\models\ReservaDetallesMenu::class, ['id_reserva' => 'id']);
+    }
 }

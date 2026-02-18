@@ -212,7 +212,6 @@ class ReservaController extends Controller
         }
     }
 
-    // ... (Mantén actionDelete, actionBulkDelete y findModel igual que los tienes)
 
 
     /**
@@ -288,5 +287,67 @@ class ReservaController extends Controller
         } else {
             throw new NotFoundHttpException('The requested page does not exist.');
         }
+    }
+
+    public function actionGenerarCotizacion($id)
+    {
+        // OPTIMIZACIÓN 1: Eager Loading
+        $model = \backend\modules\reservas\models\Reservas::find()
+            ->where(['id' => $id])
+            ->with([
+                'cliente.empresa',
+                'coordinador',
+                'salon',
+                'tipoEvento',
+                'detallesMenu'
+            ])
+            ->one();
+
+        if (!$model) {
+            throw new \yii\web\NotFoundHttpException("La reserva no existe.");
+        }
+
+        // Configuración de mPDF con parches para PHP 8
+        $pdf = new \kartik\mpdf\Pdf([
+            'mode' => \kartik\mpdf\Pdf::MODE_UTF8,
+            'format' => \kartik\mpdf\Pdf::FORMAT_A4,
+            'orientation' => \kartik\mpdf\Pdf::ORIENT_PORTRAIT,
+            'destination' => \kartik\mpdf\Pdf::DEST_BROWSER,
+            'content' => $this->renderPartial('_pdf_cotizacion', ['model' => $model]),
+            'cssFile' => '@vendor/kartik-v/yii2-mpdf/src/assets/kv-mpdf-bootstrap.min.css',
+            'cssInline' => '
+            .header-table { width: 100%; border-bottom: 2px solid #eee; margin-bottom: 20px; }
+            .proposal-title { font-size: 24px; font-weight: bold; color: #333; text-transform: uppercase; }
+            .info-box { background: #f9f9f9; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+            .table-items { width: 100%; border-collapse: collapse; }
+            .table-items th { background: #002D5E; color: white; padding: 10px; }
+            .table-items td { border: 1px solid #eee; padding: 10px; }
+            .totals-table { float: right; width: 300px; margin-top: 20px; }
+        ',
+            'options' => [
+                'title' => 'Cotización #' . $model->nombre_evento,
+                'autoScriptToLang' => false,
+                'autoLangToFont' => false,
+                'packTableData' => true,
+                // CLAVE: Configuración adicional para mPDF
+                'config' => [
+                    'table_error_report' => false,
+                ]
+            ],
+            'methods' => [
+                'SetFooter' => ['{PAGENO}'],
+            ]
+        ]);
+
+        // PARCHE ADICIONAL: Acceder a la API de mPDF antes de renderizar
+        $mpdf = $pdf->getApi();
+
+        // Esto evita que mPDF se rompa intentando calcular bordes de tablas muy complejas
+        $mpdf->simpleTables = true;
+
+        // Previene el error de "array offset" en estructuras de tablas
+        $mpdf->useSubstitutions = false;
+
+        return $pdf->render();
     }
 }

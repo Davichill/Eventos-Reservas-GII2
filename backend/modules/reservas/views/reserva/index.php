@@ -92,7 +92,24 @@ CrudAsset::register($this);
     ],
 ]) ?>
 <?php Modal::end(); ?>
-
+<?php
+$script = <<< JS
+    function copyToClipboard(id) {
+        var copyText = document.getElementById("link-input-" + id);
+        if (copyText) {
+            copyText.select();
+            copyText.setSelectionRange(0, 99999); // Soporte para móviles
+            navigator.clipboard.writeText(copyText.value).then(function() {
+                // Cambiar el icono o color temporalmente si usas SweetAlert o Toastr puedes ponerlo aquí
+                alert("Link copiado al portapapeles");
+            }).catch(function(err) {
+                console.error('Error al copiar: ', err);
+            });
+        }
+    }
+JS;
+$this->registerJs($script, \yii\web\View::POS_END);
+?>
 <style>
     /* Corrección del botón Crear para que siempre se vea texto blanco */
     .btn-success { color: #fff !important; }
