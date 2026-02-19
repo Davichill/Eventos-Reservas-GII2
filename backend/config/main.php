@@ -12,11 +12,14 @@ return [
     'basePath' => dirname(__DIR__),
     'controllerNamespace' => 'backend\controllers',
     'bootstrap' => ['log'],
-    
+
     // 1. ESTO DEFINE QUE AL ENTRAR AL SITIO SE ABRA EL DASHBOARD POR DEFECTO
-    'defaultRoute' => 'site/index', 
+    'defaultRoute' => 'site/index',
 
     'modules' => [
+        'admin' => [
+            'class' => 'mdm\admin\Module',
+        ],
         'clientes' => ['class' => 'backend\modules\clientes\Module'],
         'empresas' => ['class' => 'backend\modules\empresas\Module'],
         'reservas' => ['class' => 'backend\modules\reservas\Module'],
@@ -30,6 +33,16 @@ return [
         'pagos_reservas' => ['class' => 'backend\modules\pagos_reservas\Module'],
         'gridview' => ['class' => '\kartik\grid\Module'],
     ],
+    'as access' => [
+        'class' => 'mdm\admin\components\AccessControl',
+        'allowActions' => [
+            'site/login',
+            'site/logout',
+            'site/error',
+            'admin/*',
+        ]
+    ],
+
 
     'components' => [
         'request' => [
@@ -76,7 +89,7 @@ return [
             'enableAutoLogin' => true,
             'identityCookie' => ['name' => '_identity-backend', 'httpOnly' => true],
             // 2. ESTO DEFINE A DÓNDE MANDAR AL USUARIO SI NO ESTÁ LOGUEADO
-            'loginUrl' => ['site/login'], 
+            'loginUrl' => ['site/login'],
         ],
         'session' => [
             'name' => 'advanced-backend',

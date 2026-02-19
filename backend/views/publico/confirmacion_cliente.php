@@ -208,7 +208,7 @@ $reserva = $reserva ?? [];
                     <div class="campo-flex">
                         <label><?= $t['tel_contacto'] ?? 'Teléfono' ?></label>
                         <input type="tel" name="telefono"
-                            value="<?= Html::encode($reserva['cliente_telefono'] ?? '') ?>" required>
+                            value="<?= Html::encode($reserva['contacto_evento_telefono'] ?? '') ?>" required>
                     </div>
                     <div class="campo-flex">
                         <label><?= $t['correo_fact'] ?? 'Correo Facturación' ?></label>

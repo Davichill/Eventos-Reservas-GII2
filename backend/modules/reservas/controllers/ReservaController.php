@@ -291,63 +291,69 @@ class ReservaController extends Controller
 
     public function actionGenerarCotizacion($id)
     {
-        // OPTIMIZACIÓN 1: Eager Loading
         $model = \backend\modules\reservas\models\Reservas::find()
             ->where(['id' => $id])
-            ->with([
-                'cliente.empresa',
-                'coordinador',
-                'salon',
-                'tipoEvento',
-                'detallesMenu'
-            ])
+            ->with(['cliente', 'coordinador', 'salon', 'tipoEvento'])
             ->one();
 
         if (!$model) {
             throw new \yii\web\NotFoundHttpException("La reserva no existe.");
         }
 
-        // Configuración de mPDF con parches para PHP 8
+        // --- LÓGICA DE ARCHIVO ÚNICO ---
+        // Creamos un nombre único: Cotizacion_ID_FECHA_HORA.pdf
+        $nombreArchivo = 'Cotizacion_' . $id . '_' . date('Ymd_His') . '.pdf';
+        $rutaCarpeta = Yii::getAlias('@backend/web/cotizaciones_historial/');
+
+        // Si la carpeta no existe, la creamos
+        if (!is_dir($rutaCarpeta)) {
+            mkdir($rutaCarpeta, 0777, true);
+        }
+
+        $rutaCompleta = $rutaCarpeta . $nombreArchivo;
+
         $pdf = new \kartik\mpdf\Pdf([
             'mode' => \kartik\mpdf\Pdf::MODE_UTF8,
             'format' => \kartik\mpdf\Pdf::FORMAT_A4,
-            'orientation' => \kartik\mpdf\Pdf::ORIENT_PORTRAIT,
-            'destination' => \kartik\mpdf\Pdf::DEST_BROWSER,
             'content' => $this->renderPartial('_pdf_cotizacion', ['model' => $model]),
             'cssFile' => '@vendor/kartik-v/yii2-mpdf/src/assets/kv-mpdf-bootstrap.min.css',
-            'cssInline' => '
-            .header-table { width: 100%; border-bottom: 2px solid #eee; margin-bottom: 20px; }
-            .proposal-title { font-size: 24px; font-weight: bold; color: #333; text-transform: uppercase; }
-            .info-box { background: #f9f9f9; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
-            .table-items { width: 100%; border-collapse: collapse; }
-            .table-items th { background: #002D5E; color: white; padding: 10px; }
-            .table-items td { border: 1px solid #eee; padding: 10px; }
-            .totals-table { float: right; width: 300px; margin-top: 20px; }
-        ',
+            'destination' => \kartik\mpdf\Pdf::DEST_FILE, // <-- CAMBIO CLAVE: Guarda el archivo
+            'filename' => $rutaCompleta,
             'options' => [
                 'title' => 'Cotización #' . $model->nombre_evento,
-                'autoScriptToLang' => false,
-                'autoLangToFont' => false,
-                'packTableData' => true,
-                // CLAVE: Configuración adicional para mPDF
-                'config' => [
-                    'table_error_report' => false,
-                ]
+                'config' => ['table_error_report' => false]
             ],
             'methods' => [
                 'SetFooter' => ['{PAGENO}'],
             ]
         ]);
 
-        // PARCHE ADICIONAL: Acceder a la API de mPDF antes de renderizar
-        $mpdf = $pdf->getApi();
+        // Ejecutamos la generación y guardado del archivo
+        $pdf->render();
 
-        // Esto evita que mPDF se rompa intentando calcular bordes de tablas muy complejas
-        $mpdf->simpleTables = true;
+        // --- REGISTRO EN EL HISTORIAL ---
+        // Guardamos en la tabla que creamos que esta versión existe
+        Yii::$app->db->createCommand()->insert('reserva_historial', [
+            'id_reserva' => $id,
+            'datos_anteriores' => json_encode($model->attributes), // Estado de la reserva en ese momento
+            'fecha_cambio' => date('Y-m-d H:i:s'),
+            'usuario_id' => Yii::$app->user->id,
+            'motivo_cambio' => $nombreArchivo // Aquí guardamos el nombre del PDF
+        ])->execute();
 
-        // Previene el error de "array offset" en estructuras de tablas
-        $mpdf->useSubstitutions = false;
+        // --- MOSTRAR AL USUARIO ---
+        // Como ya se guardó, ahora lo enviamos al navegador para que el usuario lo vea
+        return Yii::$app->response->sendFile($rutaCompleta, $nombreArchivo, ['inline' => true]);
+    }
 
-        return $pdf->render();
+    public function actionDescargarVersion($archivo)
+    {
+        $ruta = Yii::getAlias('@backend/web/cotizaciones_historial/') . $archivo;
+
+        if (file_exists($ruta)) {
+            return Yii::$app->response->sendFile($ruta, $archivo, ['inline' => true]);
+        } else {
+            throw new \yii\web\NotFoundHttpException("El archivo físico ya no existe en el servidor.");
+        }
     }
 }

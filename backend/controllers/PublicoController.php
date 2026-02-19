@@ -80,16 +80,16 @@ class PublicoController extends Controller
             $model = Reservas::findOne(['token' => $token]);
 
             if ($model) {
-                // USANDO NOMBRES REALES DE TU TABLA (visto en phpMyAdmin)
-                $model->firma_nombre = $request->post('razon_social'); // Guardamos razon_social en firma_nombre
+                // ... Tus asignaciones de datos existentes ...
+                $model->firma_nombre = $request->post('razon_social');
                 $model->firma_identificacion = $request->post('identificacion_fiscal');
                 $model->id_mesa = $request->post('id_mesa');
                 $model->manteleria = $request->post('manteleria');
                 $model->color_servilleta = $request->post('color_servilleta');
-                $model->logistica = $request->post('logistica'); // Columna 28 en tu captura
+                $model->logistica = $request->post('logistica');
+                $model->contacto_evento_telefono = $request->post('contacto_evento_telefono');
+                $model->contacto_evento_nombre = $request->post('contacto_evento_nombre');
 
-                // Para los platos, veo que tienes una tabla llamada 'reserva_detalles_menu'
-                // Por ahora, si quieres guardar una nota rápida, puedes usar 'observaciones' (columna 29)
                 $platos = $request->post('bocaditos');
                 if (!empty($platos)) {
                     $model->observaciones = "Platos seleccionados: " . implode(', ', $platos);
@@ -98,6 +98,16 @@ class PublicoController extends Controller
                 $model->estado = 'Confirmada';
 
                 if ($model->save()) {
+                    // --- NUEVO: INSERTAR NOTIFICACIÓN PARA EL ADMIN ---
+                    Yii::$app->db->createCommand()->insert('notificacion_sistema', [
+                        'id_reserva' => $model->id,
+                        'mensaje' => "El cliente ha finalizado el formulario de invitación: " . $model->nombre_evento,
+                        'tipo' => 'success',
+                        'leido' => 0,
+                        'created_at' => date('Y-m-d H:i:s'),
+                    ])->execute();
+                    // --------------------------------------------------
+
                     Yii::$app->session->setFlash('success', "¡Reserva confirmada con éxito!");
                     return $this->redirect(['ver', 'token' => $token]);
                 } else {

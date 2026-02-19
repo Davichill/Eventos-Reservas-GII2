@@ -336,6 +336,7 @@ class Reservas extends \yii\db\ActiveRecord
 
     // En Reservas.php
 
+
     public function beforeSave($insert)
     {
         if (parent::beforeSave($insert)) {
@@ -347,8 +348,23 @@ class Reservas extends \yii\db\ActiveRecord
             return true;
         }
         return false;
-    }
+        // Solo guardamos historial si es una actualización (no en registros nuevos)
+        if (!$insert) {
+            // Capturamos los datos actuales de la base de datos
+            $datosAnteriores = $this->getOldAttributes();
 
+            // Insertamos en la tabla de historial usando SQL directo para mayor velocidad
+            \Yii::$app->db->createCommand()->insert('reserva_historial', [
+                'id_reserva' => $this->id,
+                'datos_anteriores' => json_encode($datosAnteriores),
+                'fecha_cambio' => date('Y-m-d H:i:s'),
+                'usuario_id' => \Yii::$app->user->id ?? null,
+                'motivo_cambio' => 'Cambio en los detalles de la reserva o cotización'
+            ])->execute();
+        }
+
+        return true;
+    }
     /**
      * Relación con los platos del menú
      */
@@ -358,4 +374,6 @@ class Reservas extends \yii\db\ActiveRecord
         // y se conecta mediante 'id_reserva'
         return $this->hasMany(\backend\modules\reservas\models\ReservaDetallesMenu::class, ['id_reserva' => 'id']);
     }
+
+
 }

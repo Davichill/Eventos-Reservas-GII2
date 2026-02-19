@@ -19,6 +19,7 @@ class User extends ActiveRecord implements IdentityInterface
         return '{{%admin_usuarios}}';
     }
 
+
     public function behaviors()
     {
         return [
@@ -35,7 +36,7 @@ class User extends ActiveRecord implements IdentityInterface
     public static function findByUsername($username)
     {
         // 'usuario' es el nombre de tu columna en la DB
-        return static::findOne(['usuario' => $username, 'activo' => self::STATUS_ACTIVE]);
+        return static::findOne(['username' => $username, 'activo' => self::STATUS_ACTIVE]);
     }
 
     /** * VALIDACIÓN DE ROL: Verifica si el tipo es 'principal'
