@@ -30,6 +30,16 @@ if (isset($model->cliente->empresa)) {
             </td>
         </tr>
     </table>
+    <div class="row">
+        <div class="col-xs-6 text-right">
+            <h3 style="color: #333;">Código:
+                <?= $codigoUnico ?>
+            </h3>
+            <p>Fecha:
+                <?= date('d/m/Y') ?>
+            </p>
+        </div>
+    </div>
 
     <div style="font-size: 18px; font-weight: bold; color: #002D5E; margin-top: 10px;">
         # <?= Html::encode($model->nombre_evento ?? '') ?>
@@ -131,36 +141,36 @@ if (isset($model->cliente->empresa)) {
     </table>
 
     <div style="margin-top: 20px;">
-    <h4 style="color: #002D5E; border-bottom: 1px solid #ccc;">MENÚ SELECCIONADO</h4>
-    <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
-        <thead>
-            <tr style="background-color: #f2f2f2;">
-                <th style="padding: 8px; border: 0.1mm solid #ddd; text-align: left;">Plato</th>
-                <th style="padding: 8px; border: 0.1mm solid #ddd; text-align: left;">Categoría</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php if (!empty($model->detallesMenu)): ?>
-                <?php foreach ($model->detallesMenu as $plato): ?>
+        <h4 style="color: #002D5E; border-bottom: 1px solid #ccc;">MENÚ SELECCIONADO</h4>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+            <thead>
+                <tr style="background-color: #f2f2f2;">
+                    <th style="padding: 8px; border: 0.1mm solid #ddd; text-align: left;">Plato</th>
+                    <th style="padding: 8px; border: 0.1mm solid #ddd; text-align: left;">Categoría</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (!empty($model->detallesMenu)): ?>
+                    <?php foreach ($model->detallesMenu as $plato): ?>
+                        <tr>
+                            <td style="padding: 8px; border: 0.1mm solid #eee;">
+                                <?= \yii\helpers\Html::encode($plato->nombre_plato) ?>
+                            </td>
+                            <td style="padding: 8px; border: 0.1mm solid #eee;">
+                                <?= \yii\helpers\Html::encode($plato->categoria ?? 'General') ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php else: ?>
                     <tr>
-                        <td style="padding: 8px; border: 0.1mm solid #eee;">
-                            <?= \yii\helpers\Html::encode($plato->nombre_plato) ?>
-                        </td>
-                        <td style="padding: 8px; border: 0.1mm solid #eee;">
-                            <?= \yii\helpers\Html::encode($plato->categoria ?? 'General') ?>
+                        <td colspan="2" style="padding: 10px; text-align: center; border: 0.1mm solid #eee;">
+                            No se han seleccionado platos para esta reserva.
                         </td>
                     </tr>
-                <?php endforeach; ?>
-            <?php else: ?>
-                <tr>
-                    <td colspan="2" style="padding: 10px; text-align: center; border: 0.1mm solid #eee;">
-                        No se han seleccionado platos para esta reserva.
-                    </td>
-                </tr>
-            <?php endif; ?>
-        </tbody>
-    </table>
-</div>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
 
     <div style="margin: 20px 0; text-align: center;">
         <img src="https://via.placeholder.com/800x100?text=IMAGEN+REFERENCIAL"
@@ -172,8 +182,10 @@ if (isset($model->cliente->empresa)) {
 
 </div>
 
-<h4 style="margin-top: 25px; color: #002D5E; border-bottom: 1px solid #ccc; padding-bottom: 5px;">EQUIPOS AUDIOVISUALES</h4>
-<table style="width: 100%; border-collapse: collapse; font-size: 11px; border: 0.1mm solid #ddd;"> <thead>
+<h4 style="margin-top: 25px; color: #002D5E; border-bottom: 1px solid #ccc; padding-bottom: 5px;">EQUIPOS AUDIOVISUALES
+</h4>
+<table style="width: 100%; border-collapse: collapse; font-size: 11px; border: 0.1mm solid #ddd;">
+    <thead>
         <tr style="background: #f2f2f2;">
             <th style="padding: 10px; border: 0.1mm solid #ddd; text-align: left;">Descripción</th>
             <th style="padding: 10px; border: 0.1mm solid #ddd; text-align: center;">Cantidad</th>
@@ -190,12 +202,16 @@ if (isset($model->cliente->empresa)) {
                     <tr>
                         <td style="padding: 10px; border: 0.1mm solid #eee;"><?= Html::encode(trim($equipo)) ?></td>
                         <td style="padding: 10px; border: 0.1mm solid #eee; text-align: center;">1</td>
-                        <td style="padding: 10px; border: 0.1mm solid #eee; text-align: right;">0.00</td> <td style="padding: 10px; border: 0.1mm solid #eee; text-align: right;">0.00</td>
+                        <td style="padding: 10px; border: 0.1mm solid #eee; text-align: right;">0.00</td>
+                        <td style="padding: 10px; border: 0.1mm solid #eee; text-align: right;">0.00</td>
                     </tr>
                 <?php endif;
             endforeach; ?>
         <?php else: ?>
-            <tr><td colspan="4" style="padding: 10px; border: 0.1mm solid #eee; text-align: center;">No hay equipos registrados</td></tr>
+            <tr>
+                <td colspan="4" style="padding: 10px; border: 0.1mm solid #eee; text-align: center;">No hay equipos
+                    registrados</td>
+            </tr>
         <?php endif; ?>
     </tbody>
 </table>

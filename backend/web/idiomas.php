@@ -32,7 +32,7 @@ $texts = [
         'btn_enviar' => 'CONFIRMAR TODOS LOS DETALLES DEL EVENTO',
 
         // --- Traducciones para Menú Cóctel ---
-        'menu_plan_coctel_title' => 'Menú Plan Cóctel:',
+        'menu' => 'Menú Plan Cóctel:',
         'menu_plan_coctel_desc' => 'Seleccione 6 bocaditos. Use el visor a la derecha para ver la referencia de cada uno.',
         'vista_previa' => 'Vista Previa',
         'visor_instruccion' => 'Pase el mouse sobre un bocado',

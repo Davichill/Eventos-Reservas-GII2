@@ -300,49 +300,53 @@ class ReservaController extends Controller
             throw new \yii\web\NotFoundHttpException("La reserva no existe.");
         }
 
-        // --- LÓGICA DE ARCHIVO ÚNICO ---
-        // Creamos un nombre único: Cotizacion_ID_FECHA_HORA.pdf
-        $nombreArchivo = 'Cotizacion_' . $id . '_' . date('Ymd_His') . '.pdf';
+        // 1. Lógica de Código y Versión
+        $ultimaVersion = (new \yii\db\Query())
+            ->from('reserva_historial')
+            ->where(['id_reserva' => $id])
+            ->max('version');
+
+        $nuevaVersion = ($ultimaVersion) ? $ultimaVersion + 1 : 1;
+        $codigoUnico = "COT-" . $id . "-V" . $nuevaVersion;
+
+        // 2. Generación del PDF (como archivo temporal)
+        $nombreArchivo = $codigoUnico . '_' . date('Ymd_His') . '.pdf';
         $rutaCarpeta = Yii::getAlias('@backend/web/cotizaciones_historial/');
-
-        // Si la carpeta no existe, la creamos
-        if (!is_dir($rutaCarpeta)) {
+        if (!is_dir($rutaCarpeta))
             mkdir($rutaCarpeta, 0777, true);
-        }
-
         $rutaCompleta = $rutaCarpeta . $nombreArchivo;
 
         $pdf = new \kartik\mpdf\Pdf([
             'mode' => \kartik\mpdf\Pdf::MODE_UTF8,
             'format' => \kartik\mpdf\Pdf::FORMAT_A4,
-            'content' => $this->renderPartial('_pdf_cotizacion', ['model' => $model]),
-            'cssFile' => '@vendor/kartik-v/yii2-mpdf/src/assets/kv-mpdf-bootstrap.min.css',
-            'destination' => \kartik\mpdf\Pdf::DEST_FILE, // <-- CAMBIO CLAVE: Guarda el archivo
+            'content' => $this->renderPartial('_pdf_cotizacion', [
+                'model' => $model,
+                'codigoUnico' => $codigoUnico
+            ]),
+            'destination' => \kartik\mpdf\Pdf::DEST_FILE,
             'filename' => $rutaCompleta,
-            'options' => [
-                'title' => 'Cotización #' . $model->nombre_evento,
-                'config' => ['table_error_report' => false]
-            ],
             'methods' => [
-                'SetFooter' => ['{PAGENO}'],
+                'SetHeader' => ['Código: ' . $codigoUnico],
+                'SetFooter' => ['Generado el ' . date('d/m/Y H:i') . '||Página {PAGENO}'],
             ]
         ]);
 
-        // Ejecutamos la generación y guardado del archivo
         $pdf->render();
 
-        // --- REGISTRO EN EL HISTORIAL ---
-        // Guardamos en la tabla que creamos que esta versión existe
+        // --- 3. NUEVO: GUARDAR EN BASE DE DATOS COMO BLOB ---
+        $contenidoPdf = file_get_contents($rutaCompleta); // Leemos el archivo físico
+
         Yii::$app->db->createCommand()->insert('reserva_historial', [
             'id_reserva' => $id,
-            'datos_anteriores' => json_encode($model->attributes), // Estado de la reserva en ese momento
+            'codigo_cotizacion' => $codigoUnico,
+            'version' => $nuevaVersion,
+            'datos_anteriores' => json_encode($model->attributes),
             'fecha_cambio' => date('Y-m-d H:i:s'),
             'usuario_id' => Yii::$app->user->id,
-            'motivo_cambio' => $nombreArchivo // Aquí guardamos el nombre del PDF
+            'motivo_cambio' => $nombreArchivo,
+            'archivo_binario' => $contenidoPdf, // El PDF se guarda aquí
         ])->execute();
 
-        // --- MOSTRAR AL USUARIO ---
-        // Como ya se guardó, ahora lo enviamos al navegador para que el usuario lo vea
         return Yii::$app->response->sendFile($rutaCompleta, $nombreArchivo, ['inline' => true]);
     }
 
@@ -350,10 +354,29 @@ class ReservaController extends Controller
     {
         $ruta = Yii::getAlias('@backend/web/cotizaciones_historial/') . $archivo;
 
+        // 1. Intentar descargar el archivo físico si existe
         if (file_exists($ruta)) {
             return Yii::$app->response->sendFile($ruta, $archivo, ['inline' => true]);
-        } else {
-            throw new \yii\web\NotFoundHttpException("El archivo físico ya no existe en el servidor.");
         }
+
+        // 2. Si no existe, buscar en la Base de Datos (Respaldo)
+        $registro = (new \yii\db\Query())
+            ->from('reserva_historial')
+            ->where(['motivo_cambio' => $archivo])
+            ->one();
+
+        if ($registro && $registro['archivo_binario']) {
+            // Opcional: Recrear el archivo físico para futuras peticiones
+            file_put_contents($ruta, $registro['archivo_binario']);
+
+            // Enviar el contenido binario directamente al navegador
+            return Yii::$app->response->sendContentAsFile(
+                $registro['archivo_binario'],
+                $archivo,
+                ['inline' => true, 'mimeType' => 'application/pdf']
+            );
+        }
+
+        throw new \yii\web\NotFoundHttpException("El archivo no existe ni en el servidor ni en la base de datos.");
     }
 }

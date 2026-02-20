@@ -167,7 +167,7 @@ $reserva = $reserva ?? [];
 
     <main>
         <div style="text-align: center; margin-bottom: 30px;">
-            <img src="<?= Url::to('@web/img/logo_goquito.png') ?>" alt="Logo" style="max-width: 220px;">
+            <img src="<?= Url::to('@web/img/logo.png') ?>" alt="Logo" style="max-width: 220px;">
         </div>
 
         <div class="instruccion" style="background: #eef2f7; padding: 20px; border-radius: 4px; margin-bottom: 30px;">
@@ -256,11 +256,22 @@ $reserva = $reserva ?? [];
                 <div style="background: #f9f9f9; padding: 20px; border-radius: 8px;">
                     <?php
                     $id_tipo = (int) ($reserva['id_tipo_evento'] ?? 0);
-                    $mapa_vistas = [1 => 'desayunos.php', 2 => 'seminario.php', 3 => 'coctel.php', 5 => 'almuerzo_cena.php', 6 => 'coffee_break.php'];
+                    $mapa_vistas = [
+                        1 => 'desayunos.php',
+                        2 => 'seminario.php',
+                        3 => 'coctel.php',
+                        5 => 'almuerzo_cena.php',
+                        6 => 'coffee_break.php'
+                    ];
                     $archivo = $mapa_vistas[$id_tipo] ?? null;
 
                     if ($archivo && file_exists(__DIR__ . '/vistas_menu/' . $archivo)) {
-                        echo $this->render('vistas_menu/' . $archivo, ['t' => $t, 'reserva' => $reserva]);
+                        // AGREGAMOS 'categorias' => $categorias al array de parámetros
+                        echo $this->render('vistas_menu/' . $archivo, [
+                            't' => $t,
+                            'reserva' => $reserva,
+                            'categorias' => $categorias ?? [] // <--- CAMBIO AQUÍ
+                        ]);
                     } else {
                         echo "<p>" . ($t['coordine_asesor'] ?? 'Coordine detalles con su asesor.') . "</p>";
                     }

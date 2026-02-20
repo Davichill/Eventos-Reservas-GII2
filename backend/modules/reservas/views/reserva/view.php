@@ -4,7 +4,6 @@ use yii\helpers\Url;
 
 /* Cálculos de saldo */
 $total_evento = $model->total_evento ?? 0;
-// Si no tienes una relación 'pagos' definida, puedes usar el campo total_pagado de la tabla
 $total_pagado = $model->total_pagado ?? 0;
 $saldo_pendiente = $total_evento - $total_pagado;
 
@@ -15,6 +14,20 @@ $badge_class = [
     'Cancelada' => 'badge-danger',
 ];
 $estado_class = $badge_class[$model->estado] ?? 'badge-secondary';
+
+// Obtener los platos seleccionados para esta reserva
+$platosSeleccionados = (new \yii\db\Query())
+    ->select('*')
+    ->from('reserva_detalles_menu')
+    ->where(['id_reserva' => $model->id])
+    ->all();
+
+// Agrupar platos por categoría para mejor visualización
+$platosPorCategoria = [];
+foreach ($platosSeleccionados as $plato) {
+    $categoria = $plato['categoria'] ?? 'General';
+    $platosPorCategoria[$categoria][] = $plato['nombre_plato'];
+}
 ?>
 
 <div class="reserva-view container-fluid p-0">
@@ -31,10 +44,6 @@ $estado_class = $badge_class[$model->estado] ?? 'badge-secondary';
             <?= Html::a('<i class="fas fa-edit"></i> Editar', ['update', 'id' => $model->id], [
                 'class' => 'btn btn-outline-primary btn-sm rounded-pill px-3',
                 'role' => 'modal-remote'
-            ]) ?>
-            <?= Html::a('<i class="fas fa-file-pdf"></i> PDF', ['generar-pdf', 'id' => $model->id], [
-                'class' => 'btn btn-danger btn-sm rounded-pill ml-2 px-3',
-                'target' => '_blank'
             ]) ?>
         </div>
     </div>
@@ -90,12 +99,48 @@ $estado_class = $badge_class[$model->estado] ?? 'badge-secondary';
                             <p class="font-weight-bold"><?= Html::encode($model->contacto_evento_telefono ?: 'N/A') ?>
                             </p>
                         </div>
-                        <div class="col-md-6">
-                            <label class="text-muted small mb-0">Teléfono de Contacto:</label>
-                            <p class="font-weight-bold"><?= Html::encode($model->contacto_evento_telefono ?: 'N/A') ?>
-                            </p>
-                        </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- NUEVA SECCIÓN: PLATOS SELECCIONADOS DEL MENÚ -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="mb-0 font-weight-bold text-dark"><i class="fas fa-utensils text-success mr-2"></i>Menú
+                        Seleccionado</h6>
+                </div>
+                <div class="card-body">
+                    <?php if (!empty($platosSeleccionados)): ?>
+                        <?php foreach ($platosPorCategoria as $categoria => $platos): ?>
+                            <div class="mb-3">
+                                <span class="badge badge-info mb-2 p-2">
+                                    <?= Html::encode(ucfirst($categoria)) ?>
+                                </span>
+                                <div class="row">
+                                    <?php foreach ($platos as $plato): ?>
+                                        <div class="col-md-6 mb-2">
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-check-circle text-success mr-2"></i>
+                                                <span><?= Html::encode($plato) ?></span>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                        
+                        <?php if (!empty($model->menu_opcion)): ?>
+                            <div class="mt-3 pt-2 border-top">
+                                <span class="font-weight-bold text-muted">Opción de menú:</span>
+                                <span class="badge badge-light ml-2"><?= Html::encode($model->menu_opcion) ?></span>
+                            </div>
+                        <?php endif; ?>
+                    <?php else: ?>
+                        <p class="text-muted text-center py-3 mb-0">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            No hay platos seleccionados para esta reserva.
+                        </p>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -192,6 +237,7 @@ $estado_class = $badge_class[$model->estado] ?? 'badge-secondary';
         </div>
     </div>
 </div>
+
 <?php
 // Buscamos los cambios registrados para esta reserva
 $cambios = (new \yii\db\Query())

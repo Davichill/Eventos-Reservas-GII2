@@ -4,13 +4,14 @@ namespace backend\controllers;
 
 use Yii;
 use backend\modules\reservas\models\Reservas;
+use backend\modules\reservas\models\ReservaDetallesMenu;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
+use yii\web\UploadedFile;
 use yii\filters\AccessControl;
 
 class PublicoController extends Controller
 {
-    // Layout false para que no cargue el menú lateral de administración
     public $layout = false;
 
     public function behaviors()
@@ -20,7 +21,7 @@ class PublicoController extends Controller
                 'class' => AccessControl::class,
                 'rules' => [
                     [
-                        'actions' => ['ver', 'finalizar'],
+                        'actions' => ['ver', 'finalizar', 'mostrar-imagen'],
                         'allow' => true,
                         'roles' => ['?', '@'],
                     ],
@@ -31,9 +32,9 @@ class PublicoController extends Controller
 
     public function actionVer($token)
     {
-        // 1. Buscar la reserva. Usamos 'asArray' para facilitar el manejo en tu vista actual
+        // Buscar reserva
         $reserva = Reservas::find()
-            ->joinWith(['tipoEvento']) // Asegúrate de tener esta relación en el modelo Reservas
+            ->joinWith(['tipoEvento'])
             ->where(['token' => $token, 'reservas.estado' => 'Pendiente'])
             ->asArray()
             ->one();
@@ -42,32 +43,41 @@ class PublicoController extends Controller
             throw new NotFoundHttpException('El enlace no existe, ha expirado o la reserva ya fue confirmada.');
         }
 
-        // 2. Manejo de Idioma
+        // Manejo de idioma
         $lang = Yii::$app->request->get('lang', Yii::$app->session->get('lang', 'es'));
         Yii::$app->session->set('lang', $lang);
 
-        // 3. Cargar traducciones desde el archivo físico
+        // Cargar traducciones
         $idiomasPath = Yii::getAlias('@backend/web/idiomas.php');
         if (file_exists($idiomasPath)) {
             require($idiomasPath);
         } else {
-            // Fallback en caso de que el archivo no esté para que no de error 500
             $texts = ['es' => ['confirmacion' => 'Confirmación'], 'en' => ['confirmacion' => 'Confirmation']];
         }
         $t = $texts[$lang] ?? $texts['es'];
 
-        // 4. Obtener Mesas mediante Query Builder (más seguro si no hay modelo Mesas.php)
-        $mesas = (new \yii\db\Query())
-            ->from('mesas')
+        // Obtener mesas
+        $mesas = (new \yii\db\Query())->from('mesas')->all();
+
+        // Obtener menú cóctel
+        $menuCoctelRaw = (new \yii\db\Query())
+            ->from('menu_coctel')
+            ->where(['estado' => 1])
+            ->orderBy([new \yii\db\Expression("FIELD(categoria, 'BOCADOS SALADOS', 'VEGETARIANO / VEGANO', 'MARISCOS Y PESCADOS', 'BOCADITOS DULCES'), subcategoria ASC")])
             ->all();
 
-        // 5. Renderizar enviando las variables exactas que pide tu vista
+        $categorias = [];
+        foreach ($menuCoctelRaw as $item) {
+            $categorias[$item['categoria']][$item['subcategoria']][] = $item;
+        }
+
         return $this->renderPartial('confirmacion_cliente', [
             'reserva' => $reserva,
             'lang' => $lang,
             't' => $t,
             'mesas' => $mesas,
-            'token' => $token
+            'token' => $token,
+            'categorias' => $categorias
         ]);
     }
 
@@ -80,25 +90,63 @@ class PublicoController extends Controller
             $model = Reservas::findOne(['token' => $token]);
 
             if ($model) {
-                // ... Tus asignaciones de datos existentes ...
+                // --- ACTUALIZAR DATOS DEL CLIENTE ---
+                $cliente = $model->cliente; // Obtener el cliente relacionado
+                if ($cliente) {
+                    $cliente->representante_legal = $request->post('representante_legal');
+                    $cliente->direccion_fiscal = $request->post('direccion_fiscal');
+                    $cliente->correo_facturacion = $request->post('correo_facturacion');
+                    $cliente->cliente_telefono = $request->post('telefono'); // teléfono de contacto
+                    $cliente->save();
+                }
+
+                // --- DATOS DE FACTURACIÓN (en reservas) ---
                 $model->firma_nombre = $request->post('razon_social');
-                $model->firma_identificacion = $request->post('identificacion_fiscal');
+                $model->firma_identificacion = $request->post('identificacion');
+
+                // --- CONTACTO DIRECTO DEL EVENTO ---
+                $model->contacto_evento_nombre = $request->post('contacto_evento_nombre');
+                $model->contacto_evento_telefono = $request->post('contacto_evento_telefono');
+
+                // --- HORARIOS Y EQUIPOS ---
+                $model->hora_inicio = $request->post('hora_inicio');
+                $model->hora_fin = $request->post('hora_fin');
+                $model->equipos_audiovisuales = $request->post('equipos_audiovisuales');
+
+                // --- MONTAJE ---
                 $model->id_mesa = $request->post('id_mesa');
                 $model->manteleria = $request->post('manteleria');
                 $model->color_servilleta = $request->post('color_servilleta');
-                $model->logistica = $request->post('logistica');
-                $model->contacto_evento_telefono = $request->post('contacto_evento_telefono');
-                $model->contacto_evento_nombre = $request->post('contacto_evento_nombre');
 
+                // --- OBSERVACIONES Y LOGÍSTICA ---
+                $observaciones_cocina = $request->post('observaciones');
                 $platos = $request->post('bocaditos');
-                if (!empty($platos)) {
+
+                if (!empty($platos) && !empty($observaciones_cocina)) {
+                    $model->observaciones = "Platos seleccionados: " . implode(', ', $platos) . " | Observaciones cocina: " . $observaciones_cocina;
+                } elseif (!empty($platos)) {
                     $model->observaciones = "Platos seleccionados: " . implode(', ', $platos);
+                } elseif (!empty($observaciones_cocina)) {
+                    $model->observaciones = $observaciones_cocina;
                 }
 
+                $model->logistica = $request->post('logistica');
                 $model->estado = 'Confirmada';
 
+                // --- GUARDAR ---
                 if ($model->save()) {
-                    // --- NUEVO: INSERTAR NOTIFICACIÓN PARA EL ADMIN ---
+                    // Guardar platos seleccionados en reserva_detalles_menu
+                    if (!empty($platos) && is_array($platos)) {
+                        foreach ($platos as $plato) {
+                            Yii::$app->db->createCommand()->insert('reserva_detalles_menu', [
+                                'id_reserva' => $model->id,
+                                'nombre_plato' => $plato,
+                                'categoria' => 'coctel'
+                            ])->execute();
+                        }
+                    }
+
+                    // Notificación
                     Yii::$app->db->createCommand()->insert('notificacion_sistema', [
                         'id_reserva' => $model->id,
                         'mensaje' => "El cliente ha finalizado el formulario de invitación: " . $model->nombre_evento,
@@ -106,7 +154,6 @@ class PublicoController extends Controller
                         'leido' => 0,
                         'created_at' => date('Y-m-d H:i:s'),
                     ])->execute();
-                    // --------------------------------------------------
 
                     Yii::$app->session->setFlash('success', "¡Reserva confirmada con éxito!");
                     return $this->redirect(['ver', 'token' => $token]);
@@ -117,5 +164,54 @@ class PublicoController extends Controller
             }
         }
         return $this->redirect(['site/index']);
+    }
+
+    public function actionMostrarImagen($id, $tipo)
+    {
+        $tabla = '';
+        switch ($tipo) {
+            case 'coctel':
+                $tabla = 'menu_coctel';
+                break;
+            case 'almuerzo':
+                $tabla = 'menu_almuerzo_cena';
+                break;
+            case 'seminario':
+                $tabla = 'menu_seminario';
+                break;
+            case 'coffee':
+                $tabla = 'menu_coffee_break';
+                break;
+            case 'desayuno':
+                $tabla = 'menu_desayunos';
+                break;
+            default:
+                throw new NotFoundHttpException('Tipo de menú no válido');
+        }
+
+        $imagen = (new \yii\db\Query())
+            ->select(['imagen'])
+            ->from($tabla)
+            ->where(['id' => $id])
+            ->scalar();
+
+        if ($imagen) {
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mimeType = finfo_buffer($finfo, $imagen);
+            finfo_close($finfo);
+
+            if (!$mimeType) {
+                $mimeType = 'image/jpeg';
+            }
+
+            Yii::$app->response->format = \yii\web\Response::FORMAT_RAW;
+            Yii::$app->response->headers->set('Content-Type', $mimeType);
+            Yii::$app->response->headers->set('Content-Length', strlen($imagen));
+            Yii::$app->response->headers->set('Cache-Control', 'public, max-age=86400');
+
+            return $imagen;
+        }
+
+        throw new NotFoundHttpException('Imagen no encontrada');
     }
 }
